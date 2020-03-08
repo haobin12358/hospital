@@ -1,0 +1,72 @@
+# -*- coding: utf-8 -*-
+import codecs
+import logging
+import os
+import time
+from logging.handlers import TimedRotatingFileHandler
+
+from flask import current_app
+
+from hospital.extensions.error_response import BaseError, SystemError
+from hospital.extensions.success_response import Success
+
+
+class MyTimedRotatingFileHandler(TimedRotatingFileHandler):
+
+    def __init__(self, dir_log, when):
+        self.dir_log = dir_log
+        filename = self.dir_log + time.strftime("%Y%m%d") + ".txt"
+        logging.handlers.TimedRotatingFileHandler.__init__(self, filename, when=when, interval=1, backupCount=0,
+                                                           encoding=None)
+
+    def doRollover(self):
+        self.stream.close()
+        t = self.rolloverAt - self.interval
+        timeTuple = time.localtime(t)
+        self.baseFilename = self.dir_log + time.strftime("%Y%m%d") + ".txt"
+        if self.encoding:
+            self.stream = codecs.open(self.baseFilename, 'w', self.encoding)
+        else:
+            self.stream = open(self.baseFilename, 'w')
+            self.rolloverAt = self.rolloverAt + self.interval
+
+
+class LoggerHandler():
+    def __init__(self, app=None, file='', format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"):
+        self.file = file
+        self.set_format(format)
+        if app is not None:
+            self.init_app(app)
+            self.app = app
+
+    def init_app(self, app):
+        logger_dir = self.file
+        if not os.path.isdir(logger_dir):
+            os.makedirs(logger_dir)
+        formatter = logging.Formatter(self.format)
+        log_file_handler = MyTimedRotatingFileHandler(dir_log=os.path.join(logger_dir, 'log'), when='MIDNIGHT')
+        # log_file_handler = RotatingFileHandler(filename=os.path.join(logger_dir, 'log'), maxBytes=12)
+        log_file_handler.setFormatter(formatter)
+        log_file_handler.setLevel(logging.INFO)
+        app.logger.addHandler(log_file_handler)
+        app.logger.info('>>>>>>>>>>>>>>>>>>{}<<<<<<<<<<<<<<<<<<<'.format('start success'))
+
+        # stream_handler = logging.StreamHandler(sys.stdout)
+        # stream_handler.setFormatter(formatter)
+        # app.logger.addHandler(stream_handler)
+
+    def error_handler(self):
+        @self.app.errorhandler(Exception)
+        def framework_error(e):
+            if isinstance(e, Success):
+                return e
+            current_app.logger.error(e)
+            if isinstance(e, BaseError):
+                return e
+            else:
+                if self.app.config['DEBUG']:
+                    return SystemError(e.args)
+                return SystemError()
+
+    def set_format(self, format):
+        self.format = format
