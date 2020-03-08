@@ -5,7 +5,7 @@ from flask_sqlalchemy import SQLAlchemy as _SQLAlchemy
 
 from .dingtalk.login import DingtalkLogin
 from .query_session import Query
-from epsoft.config.secret import DB_PARAMS, SERVICE_APPID, SERVICE_APPSECRET, server_dir, DT_AppKey, DT_AppSecret, \
+from hospital.config.secret import DB_PARAMS, SERVICE_APPID, SERVICE_APPSECRET, server_dir, DT_AppKey, DT_AppSecret, \
     DT_AgentID, DT_corpId
 from .loggers import LoggerHandler
 from .weixin.mp import WeixinMP
@@ -37,6 +37,6 @@ wx_server = WeixinMP(SERVICE_APPID, SERVICE_APPSECRET,
 dt_server = DingtalkLogin(DT_AppKey, DT_AppSecret, DT_AgentID, DT_corpId)
 
 
-def register_ext(app, logger_file='/tmp/epsoft/'):
+def register_ext(app, logger_file='/tmp/hospital/'):
     db.init_app(app)
     LoggerHandler(app, file=logger_file).error_handler()

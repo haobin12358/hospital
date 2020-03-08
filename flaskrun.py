@@ -1,4 +1,4 @@
-from epsoft import create_app
+from hospital import create_app
 
 app = create_app()
 

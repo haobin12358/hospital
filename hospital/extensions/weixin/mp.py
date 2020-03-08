@@ -538,68 +538,68 @@ class WeixinMP(object):
         return self.post('/message/template/send', body, buffer=True)
         # a = '/message/template/send'
 
-    def ep_access_token(self):
-        """
-        获取epaccesstoken
-        :return:
-        """
-        ep_ac_path = os.path.join(DEFAULT_DIR, ".ep_access_token")
-        timestamp = time.time()
-        if not os.path.exists(ep_ac_path) or \
-                int(os.path.getmtime(ep_ac_path)) < timestamp:
-            params = {
-                "client_id": "ehr-106",
-                "client_secret": "5b828d4939b24b11ad6d9c7529105fb6",
-                "protocalMustParams": {
-                    "baseParam": {
-                        "userCode": "nbzlb"
-                    },
-                    "charset": "utf-8",
-                    "appid": "ehr-106"}
-            }
+    # def ep_access_token(self):
+    #     """
+    #     获取epaccesstoken
+    #     :return:
+    #     """
+    #     ep_ac_path = os.path.join(DEFAULT_DIR, ".ep_access_token")
+    #     timestamp = time.time()
+    #     if not os.path.exists(ep_ac_path) or \
+    #             int(os.path.getmtime(ep_ac_path)) < timestamp:
+    #         params = {
+    #             "client_id": "ehr-106",
+    #             "client_secret": "5b828d4939b24b11ad6d9c7529105fb6",
+    #             "protocalMustParams": {
+    #                 "baseParam": {
+    #                     "userCode": "nbzlb"
+    #                 },
+    #                 "charset": "utf-8",
+    #                 "appid": "ehr-106"}
+    #         }
 
-            # headers = {}
-            # headers["Content-Type"] = "application/json;charset=UTF-8"
-            data = json.dumps(params, ensure_ascii=False).encode('utf-8')
-            data = self.fetch("POST","https://epp.epsoft.com.cn/eps-api/oauth/token", data=data, headers={
-                "Content-Type":"application/json;charset=UTF-8"})
-            from flask import current_app
-            current_app.logger.info('get data = {}'.format(data))
-            with open(ep_ac_path, 'wb') as fp:
-                fp.write(data.accessToken.encode("utf-8"))
-            lasttime = time.mktime(time.strptime(str(data.expiration).split('+')[0], '%Y-%m-%dT%H:%M:%S.%f'))
-            current_app.logger.info('get ep_access_token lasttime = {}'.format(lasttime))
-            os.utime(ep_ac_path, (timestamp, lasttime))  # 过期时间设置
+    #         # headers = {}
+    #         # headers["Content-Type"] = "application/json;charset=UTF-8"
+    #         data = json.dumps(params, ensure_ascii=False).encode('utf-8')
+    #         data = self.fetch("POST","https://epp.epsoft.com.cn/eps-api/oauth/token", data=data, headers={
+    #             "Content-Type":"application/json;charset=UTF-8"})
+    #         from flask import current_app
+    #         current_app.logger.info('get data = {}'.format(data))
+    #         with open(ep_ac_path, 'wb') as fp:
+    #             fp.write(data.accessToken.encode("utf-8"))
+    #         lasttime = time.mktime(time.strptime(str(data.expiration).split('+')[0], '%Y-%m-%dT%H:%M:%S.%f'))
+    #         current_app.logger.info('get ep_access_token lasttime = {}'.format(lasttime))
+    #         os.utime(ep_ac_path, (timestamp, lasttime))  # 过期时间设置
 
-        return open(ep_ac_path).read().strip()
+    #     return open(ep_ac_path).read().strip()
 
-    def ep_test_access_token(self):
-        ep_ac_path = os.path.join(DEFAULT_DIR, ".ep_test_access_token")
-        timestamp = time.time()
-        if not os.path.exists(ep_ac_path) or \
-                int(os.path.getmtime(ep_ac_path)) < timestamp:
+    # def ep_test_access_token(self):
+    #     ep_ac_path = os.path.join(DEFAULT_DIR, ".ep_test_access_token")
+    #     timestamp = time.time()
+    #     if not os.path.exists(ep_ac_path) or \
+    #             int(os.path.getmtime(ep_ac_path)) < timestamp:
 
-            params = {
-                "client_id": "ehradmin",
-                "client_secret": "5f728cee95b048f2a94db9d33d1f6737",
-                "protocalMustParams": {
-                    "baseParam": {
-                        "userCode": "nbzlb"
-                    },
-                    "charset": "utf-8",
-                    "appid": "app_id"
-                }
-            }
-            data = json.dumps(params, ensure_ascii=False).encode('utf-8')
-            data = self.fetch("POST", "https://epp.epsoft.com.cn/eps-api/oauth/token", data=data, headers={
-                "Content-Type": "application/json;charset=UTF-8"})
-            from flask import current_app
-            current_app.logger.info('get data = {}'.format(data))
-            with open(ep_ac_path, 'wb') as fp:
-                fp.write(data.accessToken.encode("utf-8"))
-            lasttime = time.mktime(time.strptime(str(data.expiration).split('+')[0], '%Y-%m-%dT%H:%M:%S.%f'))
-            current_app.logger.info('get ep_test_access_token lasttime = {}'.format(lasttime))
+    #         params = {
+    #             "client_id": "ehradmin",
+    #             "client_secret": "5f728cee95b048f2a94db9d33d1f6737",
+    #             "protocalMustParams": {
+    #                 "baseParam": {
+    #                     "userCode": "nbzlb"
+    #                 },
+    #                 "charset": "utf-8",
+    #                 "appid": "app_id"
+    #             }
+    #         }
+    #         data = json.dumps(params, ensure_ascii=False).encode('utf-8')
+    #         data = self.fetch("POST", "https://epp.epsoft.com.cn/eps-api/oauth/token", data=data, headers={
+    #             "Content-Type": "application/json;charset=UTF-8"})
+    #         from flask import current_app
+    #         current_app.logger.info('get data = {}'.format(data))
+    #         with open(ep_ac_path, 'wb') as fp:
+    #             fp.write(data.accessToken.encode("utf-8"))
+    #         lasttime = time.mktime(time.strptime(str(data.expiration).split('+')[0], '%Y-%m-%dT%H:%M:%S.%f'))
+    #         current_app.logger.info('get ep_test_access_token lasttime = {}'.format(lasttime))
 
-            os.utime(ep_ac_path, (timestamp, lasttime))  # 过期时间设置
+    #         os.utime(ep_ac_path, (timestamp, lasttime))  # 过期时间设置
 
-        return open(ep_ac_path).read().strip()
+    #     return open(ep_ac_path).read().strip()
