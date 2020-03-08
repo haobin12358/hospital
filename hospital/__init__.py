@@ -9,8 +9,8 @@ from .api.ALogin import ALogin
 from .extensions.request_handler import error_handler, request_first_handler
 from .config.secret import DefaltSettig
 from .extensions.register_ext import register_ext
-from epsoft.extensions.base_jsonencoder import JSONEncoder
-from epsoft.extensions.base_request import Request
+from hospital.extensions.base_jsonencoder import JSONEncoder
+from hospital.extensions.base_request import Request
 
 
 def register(app):

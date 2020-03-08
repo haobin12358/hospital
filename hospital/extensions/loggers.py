@@ -7,8 +7,8 @@ from logging.handlers import TimedRotatingFileHandler
 
 from flask import current_app
 
-from epsoft.extensions.error_response import BaseError, SystemError
-from epsoft.extensions.success_response import Success
+from hospital.extensions.error_response import BaseError, SystemError
+from hospital.extensions.success_response import Success
 
 
 class MyTimedRotatingFileHandler(TimedRotatingFileHandler):

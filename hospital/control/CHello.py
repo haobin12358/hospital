@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from epsoft.config.enums import TestEnum
-from epsoft.extensions.success_response import Success
+from hospital.config.enums import TestEnum
+from hospital.extensions.success_response import Success
 
 
 class CHello(object):

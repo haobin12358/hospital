@@ -3,8 +3,8 @@ import json
 from datetime import datetime
 
 from sqlalchemy import orm, Column as _Column, Boolean, DateTime
-from epsoft.config.http_config import MEDIA_HOST, HTTP_HOST
-from epsoft.extensions.register_ext import db
+from hospital.config.http_config import MEDIA_HOST, HTTP_HOST
+from hospital.extensions.register_ext import db
 from .error_response import NotFound
 
 
