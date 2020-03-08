@@ -131,7 +131,7 @@ dmypy.json
 # customization
 .vscode/
 .idea/
-epsoft/config/secret.py
+hospital/config/secret.py
 img/
 pem/
 .DS_Store
