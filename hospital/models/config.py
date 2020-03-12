@@ -23,3 +23,4 @@ class Setting(Base):
     STid = Column(String(64), primary_key=True)
     STname = Column(String(128), nullable=False)
     STvalue = Column(LONGTEXT)
+    STtype = Column(Integer, nullable=False, comment="{1:客服,2：关于我们}")
