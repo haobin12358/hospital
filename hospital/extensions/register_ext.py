@@ -5,8 +5,7 @@ from flask_sqlalchemy import SQLAlchemy as _SQLAlchemy
 
 from .dingtalk.login import DingtalkLogin
 from .query_session import Query
-from hospital.config.secret import DB_PARAMS, SERVICE_APPID, SERVICE_APPSECRET, server_dir, DT_AppKey, DT_AppSecret, \
-    DT_AgentID, DT_corpId
+from hospital.config.secret import DB_PARAMS, SERVICE_APPID, SERVICE_APPSECRET, server_dir
 from .loggers import LoggerHandler
 from .weixin.mp import WeixinMP
 
@@ -33,8 +32,6 @@ db = SQLAlchemy(query_class=Query, session_options={"expire_on_commit": False, "
 wx_server = WeixinMP(SERVICE_APPID, SERVICE_APPSECRET,
                      ac_path=os.path.join(server_dir, ".access_token"),
                      jt_path=os.path.join(server_dir, ".jsapi_ticket"))
-
-dt_server = DingtalkLogin(DT_AppKey, DT_AppSecret, DT_AgentID, DT_corpId)
 
 
 def register_ext(app, logger_file='/tmp/hospital/'):
