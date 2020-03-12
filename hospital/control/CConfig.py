@@ -1,5 +1,5 @@
 """
-本文件用于处理后台基本字段设置，包括但不限于关于我们/banner页等内容
+本文件用于处理后台管理员及管理员操作行为
 create user: haobin12358
 last update time:2020/3/12 15:39
 """
@@ -14,7 +14,7 @@ from hospital.models.config import Banner
 
 class CConfig:
 
-    #@admin_required
+    @admin_required
     def set_banner(self):
         """banner创建/编辑/删除"""
         print(request.data)
@@ -27,7 +27,7 @@ class CConfig:
             if not mpbid:
                 """新增"""
                 bn_dict['BNid'] = str(uuid.uuid1())
-                #bn_dict['ADid'] = getattr(request, 'user').id
+                #TODO 创建admin后开启 bn_dict['ADid'] = getattr(request, 'user').id
                 bn_instance = Banner.create(bn_dict)
                 msg = '添加成功'
             else:
@@ -45,7 +45,6 @@ class CConfig:
 
     def list_banner(self):
         """小程序轮播图获取"""
-        print(1)
         filter_args = []
         bn = Banner.query.filter(Banner.isdelete == False,
                                               *filter_args
