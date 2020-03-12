@@ -15,7 +15,10 @@ class AAdmin(Resource):
 
     def post(self, admin):
         apis = {
-            "admin_login": self.cadmin.admin_login
+            "add_admin": self.cadmin.add_admin,
+            "admin_login": self.cadmin.admin_login,
+            "update_admin_password": self.cadmin.update_admin_password,
+            "delete_admin": self.cadmin.delete_admin
         }
 
         return apis
