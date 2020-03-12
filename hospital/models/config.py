@@ -16,3 +16,10 @@ class Banner(Base):
     BNpicture = Column(Text, nullable=False, comment='图片', url=True)
     BNsort = Column(Integer, comment='顺序')
     contentlink = Column(LONGTEXT, comment='跳转链接')
+
+class Setting(Base):
+    "setting"
+    __tablename__ = "Setting"
+    STid = Column(String(64), primary_key=True)
+    STname = Column(String(128), nullable=False)
+    STvalue = Column(LONGTEXT)
