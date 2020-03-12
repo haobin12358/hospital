@@ -3,45 +3,35 @@
 create user: haobin12358
 last update time:2020/3/12 15:39
 """
-import uuid
+import uuid, re
 from flask import request, current_app
-from hospital.extensions.token_handler import admin_required
+from hospital.extensions.token_handler import usid_to_token
+from hospital.extensions.interface.user_interface import admin_required, is_hign_level_admin
 from hospital.extensions.register_ext import db
 from hospital.extensions.params_validates import parameter_required
 from hospital.extensions.success_response import Success
-from hospital.extensions.error_response import ParamsError
-from hospital.models.config import Banner
+from hospital.extensions.error_response import ParamsError, AuthorityError
+from werkzeug.security import check_password_hash, generate_password_hash
+from hospital.models.admin import Admin, AdminActions
+from hospital.config.enums import AdminLevel, AdminStatus
 
 class CAdmin:
 
-    #@token_required
-    def add_admin_by_superadmin(self):
+    @admin_required
+    def add_admin(self):
         """超级管理员添加普通管理"""
+        print(is_hign_level_admin())
+        if not is_hign_level_admin():
+            return AuthorityError()
 
-        superadmin = self.get_admin_by_id(request.user.id)
-        if not is_hign_level_admin() or \
-                superadmin.ADlevel != AdminLevel.super_admin.value or \
-                superadmin.ADstatus != AdminStatus.normal.value:
-            raise AuthorityError('当前非超管权限')
-
-        data = request.json
-        gennerc_log("add admin data is %s" % data)
-        parameter_required(('adname', 'adpassword', 'adtelphone'))
+        data = parameter_required(('adname',))
         adid = str(uuid.uuid1())
-        password = data.get('adpassword')
-        # 密码校验
-        self.__check_password(password)
 
         adname = data.get('adname')
-        adlevel = getattr(AdminLevel, data.get('adlevel', ''))
-        adlevel = 2 if not adlevel else int(adlevel.value)
-        header = data.get('adheader') or GithubAvatarGenerator().save_avatar(adid)
-        # 等级校验
-        if adlevel not in [1, 2, 3]:
-            raise ParamsError('adlevel参数错误')
+        adlevel = 2
 
         # 账户名校验
-        self.__check_adname(adname, adid)
+        self.__check_adname(adname)
         adnum = self.__get_adnum()
         # 创建管理员
         adinstance = Admin.create({
@@ -49,9 +39,9 @@ class CAdmin:
             'ADnum': adnum,
             'ADname': adname,
             'ADtelphone': data.get('adtelphone'),
-            'ADfirstpwd': password,
+            'ADfirstpwd': "123456",
             'ADfirstname': adname,
-            'ADpassword': generate_password_hash(password),
+            'ADpassword': generate_password_hash("123456"),
             'ADheader': header,
             'ADlevel': adlevel,
             'ADstatus': 0,
@@ -69,28 +59,41 @@ class CAdmin:
         db.session.add(an_instance)
         return Success('创建管理员成功')
 
+    def __check_password(self, password):
+        """
+        校检密码
+        """
+        if not password or len(password) < 4:
+            raise ParamsError('密码长度低于4位')
+        zh_pattern = re.compile(r'[\u4e00-\u9fa5]+')
+        match = zh_pattern.search(password)
+        if match:
+            raise ParamsError(u'密码包含中文字符')
+        return True
+
+    def __check_adname(self, adname):
+        """账户名校验"""
+        if not adname:
+            return True
+        suexist = Admin.query.filter(Admin.isdelete == 0, Admin.ADname == adname).first()
+        if suexist:
+            raise ParamsError('用户名已存在')
+        return True
+
     def admin_login(self):
         """管理员登录"""
         data = parameter_required(('adname', 'adpassword'))
-        admin = self.get_admin_by_name(data.get('adname'))
+        ad = Admin.query.filter(Admin.isdelete == 0,
+                                Admin.ADlevel == 1,
+                                Admin.ADfirstname == data.get("adname")).first()
 
         # 密码验证
-        if admin and check_password_hash(admin.ADpassword, data.get("adpassword")):
-            gennerc_log('管理员登录成功 %s' % admin.ADname)
-            # 创建管理员登录记录
-            ul_instance = UserLoginTime.create({
-                "ULTid": str(uuid.uuid1()),
-                "USid": admin.ADid,
-                "USTip": request.remote_addr,
-                "ULtype": UserLoginTimetype.admin.value,
-                "UserAgent": request.user_agent.string
-            })
-            db.session.add(ul_instance)
-            token = usid_to_token(admin.ADid, 'Admin', admin.ADlevel, username=admin.ADname)
-            admin.fields = ['ADname', 'ADheader', 'ADlevel']
+        if ad and check_password_hash(ad.ADpassword, data.get("adpassword")):
+            token = usid_to_token(ad.ADid, 'Admin', ad.ADlevel, username=ad.ADname)
+            ad.fields = ['ADname', 'ADheader', 'ADlevel']
 
-            admin.fill('adlevel', AdminLevel(admin.ADlevel).zh_value)
-            admin.fill('adstatus', AdminStatus(admin.ADstatus).zh_value)
+            ad.fill('adlevel', AdminLevel(ad.ADlevel).zh_value)
+            ad.fill('adstatus', AdminStatus(ad.ADstatus).zh_value)
 
-            return Success('登录成功', data={'token': token, "admin": admin})
+            return Success('登录成功', data={'token': token, "admin": ad})
         return ParamsError("用户名或密码错误")
