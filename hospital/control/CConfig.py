@@ -14,9 +14,10 @@ from hospital.models.config import Banner
 
 class CConfig:
 
-    @admin_required
+    #@admin_required
     def set_banner(self):
         """banner创建/编辑/删除"""
+        print(request.data)
         data = parameter_required(('bnpicture', "bnsort",))
         mpbid = data.get('mpbid')
         bn_dict = {'BNpicture': data.get('bnpicture'),
@@ -26,7 +27,7 @@ class CConfig:
             if not mpbid:
                 """新增"""
                 bn_dict['BNid'] = str(uuid.uuid1())
-                bn_dict['ADid'] = getattr(request, 'user').id
+                #bn_dict['ADid'] = getattr(request, 'user').id
                 bn_instance = Banner.create(bn_dict)
                 msg = '添加成功'
             else:
@@ -38,15 +39,17 @@ class CConfig:
                 else:
                     bn_instance.update(bn_dict, null='not')
                     msg = '编辑成功'
+            print(1)
             db.session.add(bn_instance)
         return Success(message=msg, data={'mpbid': bn_instance.BNid})
 
     def list_banner(self):
         """小程序轮播图获取"""
+        print(1)
         filter_args = []
         bn = Banner.query.filter(Banner.isdelete == False,
                                               *filter_args
-                                              ).order_by(Banner.MPBsort.asc(),
+                                              ).order_by(Banner.BNsort.asc(),
                                                          Banner.createtime.desc()).all()
         [x.hide('ADid') for x in bn]
         return Success(data=bn)
