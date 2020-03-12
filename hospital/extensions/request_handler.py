@@ -20,7 +20,7 @@ def token_to_user_(token):
             username = data.get('username', 'none')
             User = namedtuple('User', ('id', 'model', 'level', 'username'))
             user = User(id, model, level, username)
-            # setattr(request, 'user', user)
+            setattr(request, 'user', user)
             current_app.logger.info('current_user info : {}'.format(data))
         except BadSignature as e:
             pass
