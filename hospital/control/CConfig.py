@@ -1,7 +1,7 @@
 """
 本文件用于处理后台管理员及管理员操作行为
 create user: haobin12358
-last update time:2020/3/12 15:39
+last update time:2020/3/13 03:53
 """
 import uuid
 from flask import request, current_app
@@ -27,7 +27,6 @@ class CConfig:
             if not mpbid:
                 """新增"""
                 bn_dict['BNid'] = str(uuid.uuid1())
-                #TODO 创建admin后开启
                 bn_dict['ADid'] = getattr(request, 'user').id
                 bn_instance = Banner.create(bn_dict)
                 msg = '添加成功'
@@ -40,7 +39,6 @@ class CConfig:
                 else:
                     bn_instance.update(bn_dict, null='not')
                     msg = '编辑成功'
-            print(1)
             db.session.add(bn_instance)
         return Success(message=msg, data={'mpbid': bn_instance.BNid})
 
