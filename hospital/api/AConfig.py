@@ -9,7 +9,8 @@ class AConfig(Resource):
     def get(self, config):
         apis = {
             "list_banner": self.cconfig.list_banner,
-            "get_csd": self.cconfig.get_csd
+            "get_csd": self.cconfig.get_csd,
+            "get_about_us": self.cconfig.get_about_us
         }
 
         return apis
