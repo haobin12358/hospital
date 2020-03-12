@@ -8,14 +8,16 @@ class AConfig(Resource):
 
     def get(self, config):
         apis = {
-            "list_banner": self.cconfig.list_banner
+            "list_banner": self.cconfig.list_banner,
+            "get_csd": self.cconfig.get_csd
         }
 
         return apis
 
     def post(self, config):
         apis = {
-            "set_banner": self.cconfig.set_banner
+            "set_banner": self.cconfig.set_banner,
+            "set_csd": self.cconfig.set_csd
         }
 
         return apis
