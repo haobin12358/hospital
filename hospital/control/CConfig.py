@@ -74,3 +74,14 @@ class CConfig:
                 msg = "更新客服二维码成功"
             db.session.add(csd_instance)
         return Success(message=msg)
+
+    def get_about_us(self):
+        """关于我们"""
+        min_pic = Setting.query.filter(Setting.isdelete == 0, Setting.STname == "min_pic").first() # 主图
+        name = Setting.query.filter(Setting.isdelete == 0, Setting.STname == "name").first() # 医院名称
+        address = Setting.query.filter(Setting.isdelete == 0, Setting.STname == "address").first() #地址
+        route = Setting.query.filter(Setting.isdelete == 0, Setting.STname == "route").first() # 路线
+        telphone = Setting.query.filter(Setting.isdelete == 0, Setting.STname == "telphone").first() # 联系电话
+        synopsls = Setting.query.filter(Setting.isdelete == 0, Setting.STname == "synopsls").first() # 简介
+        environment = Setting.query.filter(Setting.isdelete == 0, Setting.STname == "environment").first() # 环境
+        official_website = Setting.query.filter(Setting.isdelete == 0, Setting.STname == "official_website").first() # 官网
