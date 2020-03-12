@@ -1,8 +1,8 @@
 # -*-coding: utf-8 -*-
+import json
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from flask import current_app, request
 from .error_response import AuthorityError
-
 
 def usid_to_token(id, model='User', level=0, expiration='', username='none'):
     """生成令牌
@@ -20,31 +20,3 @@ def usid_to_token(id, model='User', level=0, expiration='', username='none'):
         'level': level,
 
     }).decode()
-
-def is_admin():
-    """是否是管理员"""
-    return hasattr(request, 'user') and request.user.model == 'Admin'
-
-def is_hign_level_admin():
-    """超级管理员"""
-    return is_admin() and request.user.level == 1
-
-def admin_required(func):
-    def inner(self, *args, **kwargs):
-        if not is_admin():
-            raise AuthorityError()
-        return func(self, *args, **kwargs)
-
-    return inner
-
-def is_doctor():
-    """医生"""
-    return hasattr(request, "user") and request.user.model == "Doctor"
-
-def doctor_required(func):
-    def inner(self, *args, **kwargs):
-        if not is_doctor():
-            raise AuthorityError()
-        return func(self, *args, **kwargs)
-
-    return inner

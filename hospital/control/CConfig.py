@@ -5,7 +5,7 @@ last update time:2020/3/12 15:39
 """
 import uuid
 from flask import request, current_app
-from hospital.extensions.token_handler import admin_required
+from hospital.extensions.interface.user_interface import admin_required
 from hospital.extensions.register_ext import db
 from hospital.extensions.params_validates import parameter_required
 from hospital.extensions.success_response import Success
@@ -27,7 +27,8 @@ class CConfig:
             if not mpbid:
                 """新增"""
                 bn_dict['BNid'] = str(uuid.uuid1())
-                #TODO 创建admin后开启 bn_dict['ADid'] = getattr(request, 'user').id
+                #TODO 创建admin后开启
+                bn_dict['ADid'] = getattr(request, 'user').id
                 bn_instance = Banner.create(bn_dict)
                 msg = '添加成功'
             else:
@@ -45,10 +46,7 @@ class CConfig:
 
     def list_banner(self):
         """小程序轮播图获取"""
-        filter_args = []
-        bn = Banner.query.filter(Banner.isdelete == False,
-                                              *filter_args
-                                              ).order_by(Banner.BNsort.asc(),
+        bn = Banner.query.filter(Banner.isdelete == 0).order_by(Banner.BNsort.asc(),
                                                          Banner.createtime.desc()).all()
         [x.hide('ADid') for x in bn]
         return Success(data=bn)
