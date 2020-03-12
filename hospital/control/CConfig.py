@@ -61,7 +61,8 @@ class CConfig:
         csd = Setting.query.filter(Setting.isdelete == 0, Setting.STname == "CSD").first()
         csd_dict = {
             "STname": "CSD",
-            "STvalue": data.get("stvalue")
+            "STvalue": data.get("stvalue"),
+            "STtype": 1
         }
         with db.auto_commit():
             if not csd:
@@ -77,11 +78,31 @@ class CConfig:
 
     def get_about_us(self):
         """关于我们"""
-        min_pic = Setting.query.filter(Setting.isdelete == 0, Setting.STname == "min_pic").first() # 主图
-        name = Setting.query.filter(Setting.isdelete == 0, Setting.STname == "name").first() # 医院名称
-        address = Setting.query.filter(Setting.isdelete == 0, Setting.STname == "address").first() #地址
-        route = Setting.query.filter(Setting.isdelete == 0, Setting.STname == "route").first() # 路线
-        telphone = Setting.query.filter(Setting.isdelete == 0, Setting.STname == "telphone").first() # 联系电话
-        synopsls = Setting.query.filter(Setting.isdelete == 0, Setting.STname == "synopsls").first() # 简介
-        environment = Setting.query.filter(Setting.isdelete == 0, Setting.STname == "environment").first() # 环境
-        official_website = Setting.query.filter(Setting.isdelete == 0, Setting.STname == "official_website").first() # 官网
+        about_us = Setting.query.filter(Setting.isdelete == 0, Setting.STtype == 2).first()
+        if not about_us:
+            about_us = {}
+        # 主图
+        if "min_pic" not in about_us:
+            about_us["min_pic"] = ""
+        # 医院名称
+        if "name" not in about_us:
+            about_us["name"] = ""
+        # 地址
+        if "address" not in about_us:
+            about_us["address"] = ""
+        # 路线
+        if "route" not in about_us:
+            about_us["route"] = ""
+        # 联系电话
+        if "telphone" not in about_us:
+            about_us["telphone"] = ""
+        # 简介
+        if "synopsls" not in about_us:
+            about_us["synopsls"] = ""
+        # 环境
+        if "environment" not in about_us:
+            about_us["environment"] = ""
+        # 官网
+        if "official_website" not in about_us:
+            about_us["official_website"] = ""
+        return Success(data=about_us)
