@@ -3,9 +3,8 @@ from flask import Flask
 from flask import Blueprint
 from flask_cors import CORS
 
-from .api.ATemplates import ATemplates
 from .api.AHello import AHello
-from .api.ALogin import ALogin
+from .api.AConfig import AConfig
 from .extensions.request_handler import error_handler, request_first_handler
 from .config.secret import DefaltSettig
 from .extensions.register_ext import register_ext
@@ -16,8 +15,7 @@ from hospital.extensions.base_request import Request
 def register(app):
     bp = Blueprint(__name__, 'bp', url_prefix='/api')
     bp.add_url_rule('/hello/<string:hello>', view_func=AHello.as_view('hello'))
-    bp.add_url_rule('/login/<string:login>', view_func=ALogin.as_view('login'))
-    bp.add_url_rule('/msg/<string:msg>', view_func=ATemplates.as_view('msg'))
+    bp.add_url_rule('/config/<string:config>', view_func=AConfig.as_view('config'))
     app.register_blueprint(bp)
 
 
