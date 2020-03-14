@@ -48,7 +48,7 @@ class CDepartment(object):
         if index == 'home':
             pass
         deps = Departments.query.filter(Departments.isdelete == 0).order_by(
-            Departments.DEsort.desc(), Departments.createtime.asc()).all()
+            Departments.DEsort.desc(), Departments.createtime.asc()).all_with_page()
         for dep in deps:
             if index == 'home':
                 dep.add('DEicon')
