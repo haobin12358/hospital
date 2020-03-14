@@ -43,6 +43,7 @@ class Doctor(Base):
     DOwxid = Column(String(255), comment='微信ID')
     DOskilledIn = Column(Text, comment='擅长方向')
     DOsort = Column(Integer, default=0, comment='科室医生排序')
+    DOpassword = Column(String(255), comment='医生登录密码')
     # DOshift = Column(DateTime, comment='会诊时间')
     DEid = Column(String(64), comment='科室id')
 
