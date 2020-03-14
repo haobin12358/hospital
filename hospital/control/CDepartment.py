@@ -31,7 +31,7 @@ class CDepartment(object):
 
         return Success(data=deps)
 
-    def detais(self):
+    def get(self):
         data = parameter_required('deid', 'index')
         deid = data.get('deid')
         index = data.get('index')
@@ -78,10 +78,16 @@ class CDepartment(object):
 
                 # 执行update
                 if dep:
-                    # todo sort 整数校验
+
                     update_dict = self._get_update_dict(de, data)
                     if update_dict.get('DEid')
                         update_dict.pop('DEid')
+                    if update_dict.get('DEsort'):
+                        try:
+                            int(update_dict.get('DEsort'))
+                        except:
+                            raise ParamsError('排序请输入整数')
+
                     dep.update(update_dict)
                     current_app.logger.info('更新科室 {}'.format(deid))
                     db.session.add(dep)
@@ -91,14 +97,20 @@ class CDepartment(object):
                 {'dename': '科室名', 'dalpha': '科室主图', 'deintroduction': '科室介绍',
                  'deicon': '科室小icon', 'deicon2': '科室大icon'})
             deid = str(uuid.uuid1())
-            # todo sort 整数校验
+
+            if data.get('desort'， 0):
+                try:
+                    int(data.get('desort', 0))
+                except:
+                    raise ParamsError('排序请输入整数')
+
             dep = Departments.create({
                 'DEid': deid,
                 'DEname': data.get('dename'),
                 'DEalpha': data.get('dalpha'),
                 'DEintroduction': data.get('deintroduction'),
                 'DEicon': data.get('deicon'),
-                'DEsort': data.get('desort'),
+                'DEsort': data.get('desort'， 0),
                 'DEicon2': data.get('deicon2')
             })
             current_app.logger.info('创建科室 {}'.format(data.get('dename')))
