@@ -1,7 +1,8 @@
 # -*-coding: utf-8 -*-
+import json
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
-from flask import current_app
-
+from flask import current_app, request
+from .error_response import AuthorityError
 
 def usid_to_token(id, model='User', level=0, expiration='', username='none'):
     """生成令牌

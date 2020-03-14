@@ -3,10 +3,14 @@ import json
 from datetime import datetime
 
 from sqlalchemy import orm, Column as _Column, Boolean, DateTime
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import create_engine
 from hospital.config.http_config import MEDIA_HOST, HTTP_HOST
 from hospital.extensions.register_ext import db
 from .error_response import NotFound
-
+from ..config.secret import DB_PARAMS
+mysql_engine = create_engine(DB_PARAMS, encoding='utf-8', echo=False, pool_pre_ping=True,)
+_Base = declarative_base()
 
 class Column(_Column):
     def __init__(self, *args, **kwargs):
