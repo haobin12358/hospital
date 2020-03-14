@@ -11,10 +11,7 @@ from hospital.config.enums import DoctorMetiaType
 
 class CDoctor():
 
-    def __init():
-        pass
-
-    def get():
+    def get(self):
         data = parameter_required('doid')
         doid = data.get('doid')
         doctor = Doctor.query.filter(
@@ -31,7 +28,7 @@ class CDoctor():
         return Success('获取成功', data=doctor)
         # todo 填充会诊信息 填充视频信息
 
-    def list():
+    def list(self):
         data = parameter_required()
         deid = data.get('deid')  # 科室 姓名 科室职称 擅长 主图
         # onduty = data.get('onduty')
@@ -60,14 +57,14 @@ class CDoctor():
 
     def _fill_doctor_mainpic(self, doctor):
         dmmain = DoctorMedia.query.filter(
-            DoctorMedia.DOid == do.DOid,
+            DoctorMedia.DOid == doctor.DOid,
             DoctorMedia.DMtype == DoctorMetiaType.mainpic.value,
             DoctorMedia.isdelete == 0).first()
         doctor.fill('doctormainpic', dmmain.DMmedia)
 
     def _fill_doctor_listpic(self, doctor):
         dmlist = DoctorMedia.query.filter(
-            DoctorMedia.DOid == do.DOid,
+            DoctorMedia.DOid == doctor.DOid,
             DoctorMedia.DMtype == DoctorMetiaType.listpic.value,
             DoctorMedia.isdelete == 0).order_by(
             DoctorMedia.DMsort.desc(), DoctorMedia.createtime.desc()).all()
@@ -76,7 +73,7 @@ class CDoctor():
 
     def _fill_doctor_qrpic(self, doctor):
         dmqrpic = DoctorMedia.query.filter(
-            DoctorMedia.DOid == do.DOid,
+            DoctorMedia.DOid == doctor.DOid,
             DoctorMedia.DMtype == DoctorMetiaType.qrpic.value,
             DoctorMedia.isdelete == 0).first()
         doctor.fill('doctorqrpic', dmqrpic.DMmedia)

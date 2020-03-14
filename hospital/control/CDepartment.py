@@ -11,7 +11,7 @@ from hospital.config.enums import DoctorMetiaType
 
 class CDepartment(object):
 
-    def __init__():
+    def __init__(self):
         pass
 
     def list(self):
@@ -19,15 +19,15 @@ class CDepartment(object):
         index = data.get('index')
         if index == 'home':
             pass
-        deps = Departments.query.filter(Departments.isdelete == False()).order_by(
+        deps = Departments.query.filter(Departments.isdelete == 0).order_by(
             Departments.DEsort.desc(), Departments.createtime.asc()).all()
         for dep in deps:
-            if index == 'home'
+            if index == 'home':
                 dep.fields.add('DEicon')
             if index == 'appointment':
                 dep.fields.add('DEicon2')
-            if index == 'back'
-                self._fill_dep_details(dep)
+            if index == 'back':
+                self._fill_dep_details(dep, index)
 
         return Success(data=deps)
 
@@ -36,20 +36,21 @@ class CDepartment(object):
         deid = data.get('deid')
         index = data.get('index')
         dep = Departments.query.filter(
-            Departments.DEid == deid, Departments.isdelete == False).first()
+            Departments.DEid == deid, Departments.isdelete == 0).first()
         self._fill_dep_details(dep. index)
+
         return Success(data=dep)
 
-    def _fill_dep_details(self, dep, index)
+    def _fill_dep_details(self, dep, index):
         dep.fields = '__all__'
-        sys = Symptom.queyr.filter(Symptom.DEid == dep.DEid, Symptom.isdelete == False).order_by(
+        sys = Symptom.queyr.filter(Symptom.DEid == dep.DEid, Symptom.isdelete == 0).order_by(
             Symptom.SYsort.desc(), Symptom.createtime.asc()).all()
         # 症状填充
         dep.fill('sys', sys)
         if index and str(index) == 'back':
             return
         # 医生列表填充
-        dos = Doctor.query.filter(Doctor.DEid == dep.DEid, Doctor.isdelete == False).order_by(
+        dos = Doctor.query.filter(Doctor.DEid == dep.DEid, Doctor.isdelete == 0).order_by(
             Doctor.DOsort.desc(), Doctor.createtime.asc()).all()
         for do in dos:
             do.fields.add('DOskilledIn')
@@ -57,30 +58,30 @@ class CDepartment(object):
             dmmain = DoctorMedia.query.filter(
                 DoctorMedia.DOid == do.DOid,
                 DoctorMedia.DMtype == DoctorMetiaType.mainpic.value,
-                DoctorMedia.isdelete == False).first()
+                DoctorMedia.isdelete == 0).first()
             do.fill('doctormainpic', dmmain.DMmedia)
 
-    def add_or_update_dep()
+    def add_or_update_dep(self):
         data = parameter_required()
         deid = data.get('deid', '')
         with db.auto_commit():
             if deid:
                 dep = Departments.query.filter(
-                    Departments.DEid == deid, Departments.isdelete == False).first()
+                    Departments.DEid == deid, Departments.isdelete == 0).first()
                 # 优先判断删除
                 if data.get('delete'):
                     if not dep:
                         raise ParamsError('科室已删除')
                     current_app.logger.info('删除科室 {}'.format(deid))
-                    dep.isdelete = True
+                    dep.isdelete = 1
                     db.session.add(dep)
                     return Success('删除成功', data=deid)
 
                 # 执行update
                 if dep:
 
-                    update_dict = self._get_update_dict(de, data)
-                    if update_dict.get('DEid')
+                    update_dict = self._get_update_dict(dep, data)
+                    if update_dict.get('DEid'):
                         update_dict.pop('DEid')
                     if update_dict.get('DEsort'):
                         try:
@@ -98,7 +99,7 @@ class CDepartment(object):
                  'deicon': '科室小icon', 'deicon2': '科室大icon'})
             deid = str(uuid.uuid1())
 
-            if data.get('desort'， 0):
+            if data.get('desort', 0):
                 try:
                     int(data.get('desort', 0))
                 except:
@@ -110,7 +111,7 @@ class CDepartment(object):
                 'DEalpha': data.get('dalpha'),
                 'DEintroduction': data.get('deintroduction'),
                 'DEicon': data.get('deicon'),
-                'DEsort': data.get('desort'， 0),
+                'DEsort': data.get('desort', 0),
                 'DEicon2': data.get('deicon2')
             })
             current_app.logger.info('创建科室 {}'.format(data.get('dename')))
