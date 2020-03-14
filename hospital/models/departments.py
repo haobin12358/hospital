@@ -14,8 +14,8 @@ class Departments(Base):
     DEalpha = Column(Text, url=True, comment='科室主图')
     DEsort = Column(Integer, default=0, comment='科室排序')
     DEintroduction = Column(Text, comment='科室介绍')
-    DEicon = Column(Integer, default=0, comment='科室icon')
-    DEicon2 = Column(Integer, default=0, comment='科室icon2')
+    DEicon = Column(Text, url=True, comment='科室icon')
+    DEicon2 = Column(Text, url=True, comment='科室icon2')
 
     @orm.reconstructor
     def __init__(self):
