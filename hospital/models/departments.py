@@ -38,7 +38,7 @@ class Doctor(Base):
     __tablename__ = 'Doctor'
     DOid = Column(String(64), primary_key=True)
     DOname = Column(String(255), nullable=False, comment='医生名')
-    DOtel = Column(Integer, default=0, comment='医生电话')
+    DOtel = Column(String(13), default=0, comment='医生电话')
     DOtitle = Column(String(255), comment='医生职称')
     DOdetails = Column(Text, comment='医生简介')
     DOwxid = Column(String(255), comment='微信ID')
@@ -60,5 +60,5 @@ class DoctorMedia(Base):
     DMid = Column(String(64), primary_key=True)
     DOid = Column(String(64), comment='医生ID')
     DMtype = Column(Integer, default=0, comment='0 医生主图 1 医生列表图 2 医生二维码')
-    DMmedia = Column(Text, comment='图片链接')
+    DMmedia = Column(Text, url=True, comment='图片链接')
     DMsort = Column(Integer, default=0, comment='图片顺序')
