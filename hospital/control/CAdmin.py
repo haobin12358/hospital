@@ -80,19 +80,24 @@ class CAdmin:
 
     def admin_login(self):
         """管理员登录"""
-        data = parameter_required(('adname', 'adpassword'))
-        ad = Admin.query.filter(Admin.isdelete == 0,
-                                Admin.ADname == data.get("adname")).first()
+        data = parameter_required(('adname', 'adpassword', 'adtype'))
+        if data['adtype'] == 1:
+            ad = Admin.query.filter(Admin.isdelete == 0,
+                                    Admin.ADname == data.get("adname")).first()
 
-        # 密码验证
-        if ad and check_password_hash(ad.ADpassword, data.get("adpassword")):
-            token = usid_to_token(ad.ADid, 'Admin', ad.ADlevel, username=ad.ADname)
-            ad.fields = ['ADname', 'ADheader', 'ADlevel']
+            # 密码验证
+            if ad and check_password_hash(ad.ADpassword, data.get("adpassword")):
+                token = usid_to_token(ad.ADid, 'Admin', ad.ADlevel, username=ad.ADname)
+                ad.fields = ['ADname', 'ADheader', 'ADlevel']
 
-            ad.fill('adlevel', AdminLevel(ad.ADlevel).zh_value)
-            ad.fill('adstatus', AdminStatus(ad.ADstatus).zh_value)
+                ad.fill('adlevel', AdminLevel(ad.ADlevel).zh_value)
+                ad.fill('adstatus', AdminStatus(ad.ADstatus).zh_value)
 
-            return Success('登录成功', data={'token': token, "admin": ad})
+                return Success('登录成功', data={'token': token, "admin": ad})
+        elif data['adtype'] == 2:
+            # TODO 医生登录，等待代码合并
+
+            pass
         return ParamsError("用户名或密码错误")
 
     @admin_required
