@@ -78,3 +78,4 @@ def downgrade():
     op.drop_table('Doctor')
     op.drop_table('Departments')
     # ### end Alembic commands ###
+
