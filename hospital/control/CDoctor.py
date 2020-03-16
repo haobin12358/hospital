@@ -4,6 +4,7 @@ import re
 from flask import current_app
 import uuid
 
+from sqlalchemy import or_
 from werkzeug.security import generate_password_hash
 
 from hospital.extensions.interface.user_interface import admin_required
@@ -31,6 +32,8 @@ class CDoctor(object):
         self._fill_doctor_mainpic(doctor)
         self._fill_doctor_listpic(doctor)
         self._fill_doctor_qrpic(doctor)
+        doctor.fill('favorablerate', '100%')
+        doctor.fill('treatnum', '0')
         return Success('获取成功', data=doctor)
         # todo 填充会诊信息 填充视频信息
 
@@ -46,7 +49,9 @@ class CDoctor(object):
             filter_args.append(Doctor.DEid == deid)
         elif doname:
             index = 'doname'
-            filter_args.append(Doctor.DOname.ilike('%{}%'.format(doname)))
+            # todo doname 字段校验。
+            filter_args.append(
+                or_(Doctor.DOname.ilike('%{}%'.format(doname)), Doctor.DOtitle.ilike('%{}%'.format(doname))))
         elif back:
             index = 'back'
         doctors = Doctor.query.join(Departments, Departments.DEid == Doctor.DEid).filter(
@@ -57,20 +62,15 @@ class CDoctor(object):
             self._fill_doctor_mainpic(doctor)
             if index == 'dep':
                 doctor.add('DOskilledIn')
-            if index == 'onduty':
-                # todo 会诊开始时间
-                pass
             if index == 'doname':
                 # todo 好评率 接诊次数
-                pass
-            if index == 'course':
-                # todo 好评率 接诊次数
-                pass
-            if index == 'team':
-                pass
+                doctor.fill('favorablerate', '100%')
+                doctor.fill('treatnum', '0')
             if index == 'back':
                 doctor.add('DOtel')
                 # todo 好评率 接诊次数
+                doctor.fill('favorablerate', '100%')
+                doctor.fill('treatnum', '0')
 
         return Success('获取成功', data=doctors)
 
