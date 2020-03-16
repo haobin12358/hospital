@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
+import re
+
 from flask import current_app
 import uuid
+
+from werkzeug.security import generate_password_hash
+
 from hospital.extensions.success_response import Success
 from hospital.extensions.error_response import ParamsError, NotFound
 from hospital.extensions.params_validates import parameter_required
@@ -31,10 +36,7 @@ class CDoctor(object):
     def list(self):
         data = parameter_required()
         deid = data.get('deid')  # 科室 姓名 科室职称 擅长 主图
-        onduty = data.get('onduty')  # 会诊安排筛选 姓名 科室 会诊开始时间 主图
         doname = data.get('doname')  # 姓名搜索 姓名 科室 职称 好评率 接诊次数 主图
-        course = data.get('course')  # 课程筛选 姓名 科室 职称 好评率 接诊次数 主图
-        team = data.get('team')  # 专家团队筛选 姓名 职称 科室 主图
         back = data.get('back')  # 后台列表 姓名 主图 电话 科室 职称 好评率 接诊次数
         filter_args = [Doctor.isdelete == 0, ]
         index = ''
@@ -44,16 +46,6 @@ class CDoctor(object):
         elif doname:
             index = 'doname'
             filter_args.append(Doctor.DOname.ilike('%{}%'.format(doname)))
-        elif onduty:
-            index = 'doname'
-            # todo 筛选条件
-            # filter_args.append(Doctor.DOname.ilike('%{}%'.format(doname)))
-        elif course:
-            index = 'course'
-            # todo 筛选条件
-        elif team:
-            index = 'team'
-            # todo 筛选条件
         elif back:
             index = 'back'
         doctors = Doctor.query.join(Departments, Departments.DEid == Doctor.DEid).filter(
@@ -84,7 +76,8 @@ class CDoctor(object):
     def add_or_update_doctor(self):
         data = parameter_required()
         doid = data.get('doid')
-        # todo 密码加密
+
+        password = data.get('dopassword')
         with db.auto_commit():
             if doid:
                 doctor = Doctor.query.filter(
@@ -103,11 +96,17 @@ class CDoctor(object):
                     update_dict = self._get_update_dict(doctor, data)
                     if update_dict.get('DOid'):
                         update_dict.pop('DOid')
-                    if update_dict.get('DOsort'):
+                    if update_dict.get('DOsort', 0):
                         try:
                             int(update_dict.get('DOsort'))
                         except:
                             raise ParamsError('排序请输入整数')
+                    # if update_dict.get('DOpassword'):
+
+                    if password and password != '*' * 6:
+                        self.__check_password(password)
+                        password = generate_password_hash(password)
+                        update_dict['DOpassword'] = password
                     # 更新医生列表图片
                     if data.get('doctorlistpic'):
                         self._add_or_update_list_pic(doctor, data.get('symptoms'))
@@ -144,7 +143,7 @@ class CDoctor(object):
                 'DOwxid': data.get('dowxid'),
                 'DOskilledIn': data.get('doskilledIn'),
                 'DOsort': data.get('dosort', 0),
-                'DOpassword': str(data.get('dotel'))[-6:] # todo 密码加密
+                'DOpassword': generate_password_hash(str(data.get('dotel'))[-6:])  # todo 密码加密
             })
             if data.get('doctorlistpic'):
                 self._add_or_update_list_pic(doctor, data.get('symptoms'))
@@ -250,3 +249,12 @@ class CDoctor(object):
         })
 
         db.session.add(dmmain_new)
+
+    def __check_password(self, password):
+        if not password or len(password) < 4:
+            raise ParamsError('密码长度低于4位')
+        zh_pattern = re.compile(r'[\u4e00-\u9fa5]+')
+        match = zh_pattern.search(password)
+        if match:
+            raise ParamsError(u'密码包含中文字符')
+        return True
