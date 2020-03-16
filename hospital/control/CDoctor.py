@@ -6,6 +6,7 @@ import uuid
 
 from werkzeug.security import generate_password_hash
 
+from hospital.extensions.interface.user_interface import admin_required
 from hospital.extensions.success_response import Success
 from hospital.extensions.error_response import ParamsError, NotFound
 from hospital.extensions.params_validates import parameter_required
@@ -73,15 +74,16 @@ class CDoctor(object):
 
         return Success('获取成功', data=doctors)
 
+    @admin_required
     def add_or_update_doctor(self):
         data = parameter_required()
         doid = data.get('doid')
-
         password = data.get('dopassword')
         with db.auto_commit():
             if doid:
                 doctor = Doctor.query.filter(
-                    Doctor.DEid == doid, Doctor.isdelete == 0).first()
+                    Doctor.DOid == doid, Doctor.isdelete == 0).first()
+                current_app.logger.info('get doctor {} '.format(doctor))
                 # 优先判断删除
                 if data.get('delete'):
                     if not doctor:
@@ -109,7 +111,7 @@ class CDoctor(object):
                         update_dict['DOpassword'] = password
                     # 更新医生列表图片
                     if data.get('doctorlistpic'):
-                        self._add_or_update_list_pic(doctor, data.get('symptoms'))
+                        self._add_or_update_list_pic(doctor, data.get('doctorlistpic'))
                     # 更新医生主图
                     if data.get('doctormainpic'):
                         self._add_or_update_media_pic(doctor, data.get('doctormainpic'), DoctorMetiaType.mainpic.value)
@@ -123,8 +125,9 @@ class CDoctor(object):
                     return Success('更新成功', data=doid)
             # 添加
             data = parameter_required({
-                'doname': '医生名', 'dotel': '医生电话', 'dotitle': '医生职称',
-                'dodetails': '医生简介', 'dowxid': '医生微信ID', 'doskilledIn': '擅长方向'})
+                'doname': '医生名', 'dotel': '医生电话', 'dotitle': '医生职称', 'deid': '科室',
+                'doctormainpic': '医生主图', 'dodetails': '医生简介', 'dowxid': '医生微信ID',
+                'doskilledin': '擅长方向'})
 
             doid = str(uuid.uuid1())
 
@@ -141,12 +144,13 @@ class CDoctor(object):
                 'DOtitle': data.get('dotitle'),
                 'DOdetails': data.get('dodetails'),
                 'DOwxid': data.get('dowxid'),
-                'DOskilledIn': data.get('doskilledIn'),
+                'DOskilledIn': data.get('doskilledin'),
                 'DOsort': data.get('dosort', 0),
-                'DOpassword': generate_password_hash(str(data.get('dotel'))[-6:])  # todo 密码加密
+                'DOpassword': generate_password_hash(str(data.get('dotel'))[-6:]),
+                'DEid': data.get('deid')
             })
             if data.get('doctorlistpic'):
-                self._add_or_update_list_pic(doctor, data.get('symptoms'))
+                self._add_or_update_list_pic(doctor, data.get('doctorlistpic'))
             # 更新医生主图
             if data.get('doctormainpic'):
                 self._add_or_update_media_pic(doctor, data.get('doctormainpic'), DoctorMetiaType.mainpic.value)
@@ -171,7 +175,10 @@ class CDoctor(object):
             DoctorMedia.DOid == doctor.DOid,
             DoctorMedia.DMtype == DoctorMetiaType.mainpic.value,
             DoctorMedia.isdelete == 0).first()
-        doctor.fill('doctormainpic', dmmain.DMmedia)
+        if dmmain:
+            doctor.fill('doctormainpic', dmmain.DMmedia)
+        else:
+            doctor.fill('doctormainpic', '')
 
     def _fill_doctor_listpic(self, doctor):
         dmlist = DoctorMedia.query.filter(
@@ -187,7 +194,10 @@ class CDoctor(object):
             DoctorMedia.DOid == doctor.DOid,
             DoctorMedia.DMtype == DoctorMetiaType.qrpic.value,
             DoctorMedia.isdelete == 0).first()
-        doctor.fill('doctorqrpic', dmqrpic.DMmedia)
+        if dmqrpic:
+            doctor.fill('doctorqrpic', dmqrpic.DMmedia)
+        else:
+            doctor.fill('doctorqrpic', '')
 
     def _get_update_dict(self, instance_model, data_model):
         update_dict = dict()
@@ -206,13 +216,14 @@ class CDoctor(object):
         for pic in list_pic:
             if not isinstance(pic, str):
                 continue
-            media = DoctorMedia.query.filter(DoctorMedia.DOid == doctor.DOid, DoctorMedia.DMmedia == pic).first()
+            media = DoctorMedia.query.filter(DoctorMedia.DOid == doctor.DOid, DoctorMedia.DMmedia == pic,
+                                             DoctorMedia.DMtype == DoctorMetiaType.listpic.value).first()
             if media:
                 media.DMsort = dmsort
                 dmid = media.DMid
             else:
                 dmid = str(uuid.uuid1())
-                media = Symptom.create({
+                media = DoctorMedia.create({
                     'DMid': dmid,
                     'DOid': doctor.DOid,
                     'DMtype': DoctorMetiaType.listpic.value,
@@ -225,7 +236,8 @@ class CDoctor(object):
         db.session.add_all(dm_list)
 
         # 删除多余
-        Symptom.query.filter(Symptom.SYid.notin_(dmid_list), Symptom.isdelete == 0).delete_(synchronize_session=False)
+        DoctorMedia.query.filter(DoctorMedia.DMid.notin_(dmid_list), DoctorMedia.isdelete == 0).delete_(
+            synchronize_session=False)
 
     def _add_or_update_media_pic(self, doctor, media_pic, dmtype=DoctorMetiaType.mainpic.value):
         if not isinstance(media_pic, str):

@@ -44,6 +44,34 @@ class CDepartment(object):
                 DoctorMedia.isdelete == 0).first()
             do.fill('doctormainpic', dmmain.DMmedia)
 
+    def _add_or_update_symptom(self, dep, symptoms):
+        if not isinstance(symptoms, list):
+            return
+        sysort = 1
+        syid_list = []
+        symptom_list = []
+        for syname in symptoms:
+            symptom = Symptom.query.filter(Symptom.DEid == dep.DEid, Symptom.SYname == syname).first()
+            if symptom:
+                symptom.SYsort = sysort
+                # db.session.add(symptom)
+                syid = symptom.SYid
+            else:
+                syid = str(uuid.uuid1())
+                symptom = Symptom.create({
+                    'SYid': syid,
+                    'SYname': syname,
+                    'SYsort': sysort,
+                    'DEid': dep.DEid
+                })
+            syid_list.append(syid)
+            symptom_list.append(symptom)
+            sysort += 1
+        db.session.add_all(symptom_list)
+
+        # 删除多余
+        Symptom.query.filter(Symptom.SYid.notin_(syid_list), Symptom.isdelete == 0).delete_(synchronize_session=False)
+
     def list(self):
         data = parameter_required('index')
         index = data.get('index')
@@ -101,7 +129,7 @@ class CDepartment(object):
                             raise ParamsError('排序请输入整数')
                     # 更新症状
                     if data.get('symptoms'):
-                        self.add_or_update_symptom(dep, data.get('symptoms'))
+                        self._add_or_update_symptom(dep, data.get('symptoms'))
                     dep.update(update_dict)
                     current_app.logger.info('更新科室 {}'.format(deid))
                     db.session.add(dep)
@@ -128,35 +156,7 @@ class CDepartment(object):
                 'DEicon2': data.get('deicon2')
             })
             if data.get('symptoms'):
-                self.add_or_update_symptom(dep, data.get('symptoms'))
+                self._add_or_update_symptom(dep, data.get('symptoms'))
             current_app.logger.info('创建科室 {}'.format(data.get('dename')))
             db.session.add(dep)
         return Success('创建科室成功', data=deid)
-
-    def add_or_update_symptom(self, dep, symptoms):
-        if not isinstance(symptoms, list):
-            return
-        sysort = 1
-        syid_list = []
-        symptom_list = []
-        for syname in symptoms:
-            symptom = Symptom.query.filter(Symptom.DEid == dep.DEid, Symptom.SYname == syname).first()
-            if symptom:
-                symptom.SYsort = sysort
-                # db.session.add(symptom)
-                syid = symptom.SYid
-            else:
-                syid = str(uuid.uuid1())
-                symptom = Symptom.create({
-                    'SYid': syid,
-                    'SYname': syname,
-                    'SYsort': sysort,
-                    'DEid': dep.DEid
-                })
-            syid_list.append(syid)
-            symptom_list.append(symptom)
-            sysort += 1
-        db.session.add_all(symptom_list)
-
-        # 删除多余
-        Symptom.query.filter(Symptom.SYid.notin_(syid_list), Symptom.isdelete == 0).delete_(synchronize_session=False)
