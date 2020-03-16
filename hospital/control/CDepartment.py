@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from flask import current_app
 import uuid
+
+from hospital.extensions.interface.user_interface import admin_required
 from hospital.extensions.success_response import Success
 from hospital.extensions.error_response import ParamsError
 from hospital.extensions.params_validates import parameter_required
@@ -45,8 +47,7 @@ class CDepartment(object):
     def list(self):
         data = parameter_required('index')
         index = data.get('index')
-        if index == 'home':
-            pass
+
         deps = Departments.query.filter(Departments.isdelete == 0).order_by(
             Departments.DEsort.desc(), Departments.createtime.asc()).all_with_page()
         for dep in deps:
@@ -70,6 +71,7 @@ class CDepartment(object):
 
         return Success(data=dep)
 
+    @admin_required
     def add_or_update_dep(self):
         data = parameter_required()
         deid = data.get('deid', '')
@@ -158,4 +160,3 @@ class CDepartment(object):
 
         # 删除多余
         Symptom.query.filter(Symptom.SYid.notin_(syid_list), Symptom.isdelete == 0).delete_(synchronize_session=False)
-
