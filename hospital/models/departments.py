@@ -79,15 +79,15 @@ class Example(Base):
     EXclinicVisitHistory = Column(Text, comment='就诊史')
     EXcaseAnalysis = Column(Text, comment='案例分析')
     EXinspectionResults = Column(Text, comment='校验结果')
-    Exdiagnosis = Column(Text, comment='诊断')
+    EXdiagnosis = Column(Text, comment='诊断')
     EXtreatmentPrinciple = Column(Text, comment='治疗原则')
     EXtreatmentOutcome = Column(Text, comment='治疗结果')
     EXperoration = Column(Text, comment='结束语')
     EXbriefIntroduction = Column(Text, comment='简介')
-    EXmainpic = Column(Text, comment='主图')
-    Exsort = Column(Integer, default=0, comment='排序')
+    EXalpha = Column(Text, comment='主图')
+    EXsort = Column(Integer, default=0, comment='排序')
 
     @orm.reconstructor
     def __init__(self):
         super(Example, self).__init__()
-        self.fields = ['EXid', 'EXname', 'SYid', 'createtime', 'EXmainpic']
+        self.fields = ['EXid', 'EXname', 'SYid', 'createtime', 'EXalpha']
