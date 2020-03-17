@@ -26,8 +26,8 @@ class CDoctor(object):
         if not doctor:
             raise ParamsError('医生已离开')
 
-        doctor.fields = ['DEid', 'DOname', 'DOid', 'DOtitle',
-                         'DOtel', 'DOdetails', 'DOwxid', 'DOskilledIn']
+        doctor.fields = ['DEid', 'DOname', 'DOid', 'DOtitle', 'DOtel', 'DOdetails',
+                         'DOwxid', 'DOskilledIn', 'createtime', 'DOsort']
         self._fill_department(doctor)
         self._fill_doctor_mainpic(doctor)
         self._fill_doctor_listpic(doctor)
