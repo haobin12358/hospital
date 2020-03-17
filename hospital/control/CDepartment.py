@@ -36,7 +36,7 @@ class CDepartment(object):
         dos = Doctor.query.filter(Doctor.DEid == dep.DEid, Doctor.isdelete == 0).order_by(
             Doctor.DOsort.desc(), Doctor.createtime.asc()).all()
         for do in dos:
-            do.fields.add('DOskilledIn')
+            do.add('DOskilledIn')
             # 医生主图
             dmmain = DoctorMedia.query.filter(
                 DoctorMedia.DOid == do.DOid,
