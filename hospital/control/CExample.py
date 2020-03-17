@@ -16,7 +16,6 @@ from hospital.extensions.register_ext import db
 from hospital.models import Departments, Symptom, Example
 
 
-
 class CExample(object):
 
     def get(self):
