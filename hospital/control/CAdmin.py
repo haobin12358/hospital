@@ -123,7 +123,6 @@ class CAdmin:
 
                     db.session.add(an_instance)
                 return Success('登录成功', data={'token': token, 'admin': dc})
-            # TODO 需要增加登录时间
 
         return ParamsError("用户名或密码错误")
 
