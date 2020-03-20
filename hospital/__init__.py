@@ -9,6 +9,7 @@ from .api.AAdmin import AAdmin
 from .api.ADoctor import ADoctor
 from .api.ADepartment import ADepartment
 from .api.AClasses import AClasses
+from .api.AUser import AUser
 from .extensions.request_handler import error_handler, request_first_handler
 from .config.secret import DefaltSettig
 from .extensions.register_ext import register_ext
@@ -24,6 +25,7 @@ def register(app):
     bp.add_url_rule('/doctor/<string:doctor>', view_func=ADoctor.as_view('doctor'))
     bp.add_url_rule('/department/<string:department>', view_func=ADepartment.as_view('department'))
     bp.add_url_rule('/classes/<string:classes>', view_func=AClasses.as_view('classes'))
+    bp.add_url_rule('/user/<string:user>', view_func=AUser.as_view('user'))
     app.register_blueprint(bp)
 
 
