@@ -21,6 +21,7 @@ class Classes(Base):
     DEid = Column(String(64), comment="科室id")
     DEname = Column(String(255), nullable=False, comment="科室名称")
     CLintroduction = Column(Text, comment="详细介绍")
+    CLindex = Column(Integer, default=1, comment="权重")
 
 class Course(Base):
     """
