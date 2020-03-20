@@ -18,6 +18,8 @@ class User(Base):
     USintegral = Column(Integer, default=0, comment='用户积分')
     USopenid = Column(Text, comment='小程序 openid')
     USunionid = Column(Text, comment='统一 unionID')
+    UStelphone = Column(String(16), comment="手机号")
+    UScardid = Column(String(32), comment="身份证号")
 
 
 class Family(Base):
