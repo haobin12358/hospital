@@ -19,7 +19,9 @@ class AConfig(Resource):
         apis = {
             "set_banner": self.cconfig.set_banner,
             "set_csd": self.cconfig.set_csd,
-            "set_about_us": self.cconfig.set_about_us
+            "set_about_us": self.cconfig.set_about_us,
+            "set_characteristic_team": self.cconfig.set_characteristic_team,
+            "set_honour": self.cconfig.set_honour
         }
 
         return apis

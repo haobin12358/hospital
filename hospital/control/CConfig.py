@@ -107,16 +107,16 @@ class CConfig:
         if "official_website" not in about_us_dict:
             about_us_dict["official_website"] = ""
 
-
-
         team = Characteristicteam.query.filter(Characteristicteam.isdelete == 0).all() # 特色科室/专家团队
+        print(team)
+        print(about_us_dict)
         honour = Honour.query.filter(Honour.isdelete == 0).all() # 医院荣誉
-        about_us_dict.update(team)
+        about_us_dict["characteristicteam"] = team
         if not team:
-            about_us_dict.update({"team":[]})
-        about_us_dict.update(honour)
+            about_us_dict["characteristicteam"] = {}
+        about_us_dict["honour"] = honour
         if not honour:
-            about_us_dict.update({"honour":[]})
+            about_us_dict["honour"] = {}
         return Success(data=about_us_dict)
 
     @admin_required
@@ -153,4 +153,60 @@ class CConfig:
                 db.session.add(setting_instance)
         return Success(message=msg)
 
+    @admin_required
+    def set_characteristic_team(self):
+        """创建/更新/删除特色科室"""
+        data = parameter_required(('ctpicture', 'ctname', 'ctposition', 'ctoffice'))
+        ctid = data.get('ctid')
+        ct_dict = {
+            'CTpicture': data.get('ctpicture'),
+            'CTname': data.get('ctname'),
+            'CTposition': data.get('ctposition'),
+            'CToffice': data.get('ctoffice')
+        }
+        with db.auto_commit():
+            if not ctid:
+                """新增"""
+                ct_dict['CTid'] = str(uuid.uuid1())
+                ct_instance = Characteristicteam.create(ct_dict)
+                msg = '添加成功'
+            else:
+                """修改/删除"""
+                ct_instance = Characteristicteam.query.filter_by_(CTid=ctid).first_('未找到该特色科室信息')
+                if data.get('delete'):
+                    ct_instance.update({'isdelete': 1})
+                    msg = '删除成功'
+                else:
+                    ct_instance.update(ct_dict, null='not')
+                    msg = '编辑成功'
+            db.session.add(ct_instance)
+
+        return Success(message=msg, data={'ctid': ct_instance.CTid})
+
+    @admin_required
+    def set_honour(self):
+        """创建/更新/删除团队荣誉"""
+        data = parameter_required(('hopicture', 'hotext'))
+        hoid = data.get('hoid')
+        ho_dict = {
+            'HOpicture': data.get('hopicture'),
+            'HOtext': data.get('hotext')
+        }
+        with db.auto_commit():
+            if not hoid:
+                """新增"""
+                ho_dict['HOid'] = str(uuid.uuid1())
+                ho_instance = Honour.create(ho_dict)
+                msg = '添加成功'
+            else:
+                """修改/删除"""
+                ho_instance = Honour.query.filter_by_(HOid=hoid).first_('未找到该特色科室信息')
+                if data.get('delete'):
+                    ho_instance.update({'isdelete': 1})
+                    msg = '删除成功'
+                else:
+                    ho_instance.update(ho_dict, null='not')
+                    msg = '编辑成功'
+            db.session.add(ho_instance)
+        return Success(message=msg, data={'hoid': ho_instance.HOid})
 
