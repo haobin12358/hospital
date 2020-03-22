@@ -11,6 +11,7 @@ class ADepartment(Resource):
         apis = {
             'get': self.cdepartment.get,
             'list': self.cdepartment.list,
+            'list_sympotom': self.cdepartment.list_sympotom,
         }
         return apis
 
