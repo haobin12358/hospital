@@ -27,14 +27,14 @@ class CDepartment(object):
     def _fill_dep_details(self, dep, index='home'):
         dep.fields = '__all__'
         symptoms = Symptom.query.filter(Symptom.DEid == dep.DEid, Symptom.isdelete == 0).order_by(
-            Symptom.SYsort.desc(), Symptom.createtime.asc()).all()
+            Symptom.SYsort.asc(), Symptom.createtime.asc()).all()
         # 症状填充
-        dep.fill('symptoms', [symptom.SYname for symptom in symptoms])
+        dep.fill('symptoms', symptoms)
         if index and str(index) == 'back':
             return
         # 医生列表填充
         dos = Doctor.query.filter(Doctor.DEid == dep.DEid, Doctor.isdelete == 0).order_by(
-            Doctor.DOsort.desc(), Doctor.createtime.asc()).all()
+            Doctor.DOsort.asc(), Doctor.createtime.desc()).all()
         for do in dos:
             do.add('DOskilledIn')
             # 医生主图
@@ -50,8 +50,12 @@ class CDepartment(object):
         sysort = 1
         syid_list = []
         symptom_list = []
-        for syname in symptoms:
-            symptom = Symptom.query.filter(Symptom.DEid == dep.DEid, Symptom.SYname == syname).first()
+        for symptom_dict in symptoms:
+            syname = symptom_dict.get('syname')
+            # syid = symptom_dict.get('syid')
+            symptom = Symptom.query.filter(
+                Symptom.DEid == dep.DEid, Symptom.SYname == syname,
+                                           Symptom.isdelete == 0).first()
             if symptom:
                 symptom.SYsort = sysort
                 # db.session.add(symptom)
@@ -77,7 +81,7 @@ class CDepartment(object):
         index = data.get('index')
 
         deps = Departments.query.filter(Departments.isdelete == 0).order_by(
-            Departments.DEsort.desc(), Departments.createtime.asc()).all_with_page()
+            Departments.DEsort.asc(), Departments.createtime.desc()).all_with_page()
         for dep in deps:
             if index == 'home':
                 dep.add('DEicon')
@@ -160,3 +164,10 @@ class CDepartment(object):
             current_app.logger.info('创建科室 {}'.format(data.get('dename')))
             db.session.add(dep)
         return Success('创建科室成功', data=deid)
+
+    def list_sympotom(self):
+        data = parameter_required('deid')
+        deid = data.get('deid')
+        sy_list = Symptom.query.filter(Symptom.DEid == deid, Symptom.isdelete == 0).order_by(
+            Symptom.SYsort.asc(), Symptom.createtime.desc()).all_with_page()
+        return Success('症状列表获取成功', data=sy_list)
