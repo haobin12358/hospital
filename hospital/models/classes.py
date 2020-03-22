@@ -22,6 +22,7 @@ class Classes(Base):
     DEname = Column(String(255), nullable=False, comment="科室名称")
     CLintroduction = Column(Text, comment="详细介绍")
     CLindex = Column(Integer, default=1, comment="权重")
+    # TODO 增加课时价格
 
 class Course(Base):
     """

@@ -128,3 +128,13 @@ class DingtalkError(BaseError):
     status = 405
     status_code = 405045
     message = '钉钉登录失败'
+
+class UserInfoError(BaseError):
+    status = 405
+    status_code = 405302
+    message = '请先完善个人信息'
+
+class CourseStatusError(BaseError):
+    status = 405
+    status_code = 405303
+    message = '课程状态异常'
