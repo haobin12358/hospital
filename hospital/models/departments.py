@@ -20,7 +20,7 @@ class Departments(Base):
     @orm.reconstructor
     def __init__(self):
         super(Departments, self).__init__()
-        self.fields = ['DEid', 'DEname', 'creattime']
+        self.fields = ['DEid', 'DEname', 'createtime']
 
 
 class Symptom(Base):
@@ -30,6 +30,10 @@ class Symptom(Base):
     SYname = Column(String(255), nullable=False, comment='症状名')
     SYsort = Column(Integer, default=0, comment='症状排序')
     DEid = Column(String(64), comment='科室id')
+    @orm.reconstructor
+    def __init__(self):
+        super(Symptom, self).__init__()
+        self.fields = ['SYid', 'SYname']
 
 
 class Doctor(Base):

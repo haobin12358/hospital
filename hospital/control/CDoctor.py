@@ -56,7 +56,7 @@ class CDoctor(object):
             index = 'back'
         doctors = Doctor.query.join(Departments, Departments.DEid == Doctor.DEid).filter(
             *filter_args).order_by(
-            Departments.DEsort.desc(), Doctor.DOsort.desc(), Doctor.createtime.desc()).all_with_page()
+            Departments.DEsort.asc(), Doctor.DOsort.asc(), Doctor.createtime.desc()).all_with_page()
         for doctor in doctors:
             self._fill_department(doctor)
             self._fill_doctor_mainpic(doctor)
