@@ -10,7 +10,8 @@ class AConfig(Resource):
         apis = {
             "list_banner": self.cconfig.list_banner,
             "get_csd": self.cconfig.get_csd,
-            "get_about_us": self.cconfig.get_about_us
+            "get_about_us": self.cconfig.get_about_us,
+            "get_vip_price": self.cconfig.get_vip_price
         }
 
         return apis
@@ -21,7 +22,8 @@ class AConfig(Resource):
             "set_csd": self.cconfig.set_csd,
             "set_about_us": self.cconfig.set_about_us,
             "set_characteristic_team": self.cconfig.set_characteristic_team,
-            "set_honour": self.cconfig.set_honour
+            "set_honour": self.cconfig.set_honour,
+            "set_vip_price": self.cconfig.set_vip_price
         }
 
         return apis
