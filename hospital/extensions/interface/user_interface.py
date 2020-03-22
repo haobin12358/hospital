@@ -1,13 +1,16 @@
 from flask import request
 from hospital.extensions.error_response import AuthorityError
 
+
 def is_admin():
     """是否是管理员"""
-    return request.user.model == 'Admin'
+    return hasattr(request, 'user') and request.user.model == 'Admin'
+
 
 def is_hign_level_admin():
     """超级管理员"""
     return is_admin() and request.user.level == 1
+
 
 def admin_required(func):
     def inner(self, *args, **kwargs):
@@ -17,9 +20,11 @@ def admin_required(func):
 
     return inner
 
+
 def is_doctor():
     """医生"""
     return hasattr(request, "user") and request.user.model == "Doctor"
+
 
 def doctor_required(func):
     def inner(self, *args, **kwargs):
