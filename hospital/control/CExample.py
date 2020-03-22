@@ -37,7 +37,7 @@ class CExample(object):
         else:
             if not is_admin():
                 raise AuthorityError()
-        examples = examples_sql.order_by(Example.Exsort.desc(), Example.createtime.desc()).all_with_page()
+        examples = examples_sql.order_by(Example.EXsort.asc(), Example.createtime.desc()).all_with_page()
         for exm in examples:
             self._fill_example(exm)
 
@@ -85,7 +85,7 @@ class CExample(object):
             # 添加
             data = parameter_required(
                 {'exname': '患者姓名', 'exgender': '性别', 'exage': '年龄', 'syid': '症状',
-                 'exheight': '身高', 'exweight': '体重', 'exmainpic': '主图'})
+                 'exheight': '身高', 'exweight': '体重', 'exalpha': '主图'})
             exid = str(uuid.uuid1())
 
             if data.get('exsort', 0):
@@ -96,6 +96,7 @@ class CExample(object):
 
             exm = Example.create({
                 'EXid': exid,
+                "SYid": data.get('syid'),
                 'EXname': data.get('exname'),
                 'EXgender': data.get('exgender'),
                 'EXage': data.get('exage'),
@@ -128,6 +129,7 @@ class CExample(object):
             self._fill_symptom(exm)
         else:
             exm.fields = '__all__'
+            exm.fill('exgender_zh', Gender(exm.EXgender).zh_value)
             self._fill_symptom(exm)
 
     def _fill_symptom(self, exm):
