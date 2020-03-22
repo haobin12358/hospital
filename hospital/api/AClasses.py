@@ -8,13 +8,16 @@ class AClasses(Resource):
 
     def get(self, classes):
         apis = {
+            "list": self.cclasses.list,
+            "get": self.cclasses.get
         }
 
         return apis
 
     def post(self, classes):
         apis = {
-            "set_class": self.cclasses.set_class
+            "set_class": self.cclasses.set_class,
+            "set_course": self.cclasses.set_course
         }
 
         return apis
