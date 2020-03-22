@@ -12,7 +12,7 @@ from flask import current_app
 
 from hospital.common.default_head import GithubAvatarGenerator
 from hospital.config.secret import MiniProgramAppId, MiniProgramAppSecret
-from hospital.extensions.error_response import WXLoginError, ParamsError
+from hospital.extensions.error_response import WXLoginError, ParamsError, NotFound
 from hospital.extensions.params_validates import parameter_required
 from hospital.extensions.register_ext import db
 from hospital.extensions.success_response import Success
@@ -64,7 +64,7 @@ class CUser(object):
             db.session.add(user)
 
         token = usid_to_token(user.USid, level=user.USlevel, username=user.USname)
-        data = {'token': token}
+        data = {'token': token, 'usname': user.USname}
         current_app.logger.info('return_data : {}'.format(data))
         return Success('登录成功', data=data)
 
@@ -119,6 +119,7 @@ class CUser(object):
             head.write(data.content)
         return filedbname
 
+    @staticmethod
     def _get_path(self, fold):
         """获取服务器上文件路径"""
         time_now = datetime.now()
@@ -130,3 +131,12 @@ class CUser(object):
         if not os.path.isdir(filepath):
             os.makedirs(filepath)
         return filepath, file_db_path
+
+    def test_login(self):
+        data = parameter_required()
+        tel = data.get('ustelphone')
+        user = User.query.filter(User.isdelete == false(), User.UStelphone == tel).first()
+        if not user:
+            raise NotFound
+        token = usid_to_token(user.USid, model='User', username=user.USname)
+        return Success(data={'token': token, 'usname': user.USname})

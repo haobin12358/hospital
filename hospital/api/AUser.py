@@ -10,6 +10,7 @@ class AUser(Resource):
     def post(self, user):
         apis = {
             'mp_login': self.cuser.mini_program_login,
+            'test_login': self.cuser.test_login,
         }
 
         return apis
