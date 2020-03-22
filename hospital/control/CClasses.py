@@ -177,7 +177,7 @@ class CClasses:
         """
         基于医生id获取未来30天课程情况
         """
-        args = parameter_required(('doid'))
+        args = parameter_required(('doid', ))
         filter_args = [Course.isdelete == 0, Course.DOid == args.get('doid')]
         year = int(datetime.datetime.now().year)
         month = int(datetime.datetime.now().month)
@@ -273,16 +273,18 @@ class CClasses:
         """
         预约具体课程
         """
-        args = parameter_required(('token'))
-        data = parameter_required(('coid'))
+        args = request.args.to_dict()
+
+        data = parameter_required(('coid', ))
         course = Course.query.filter(Course.COid == data.get('coid')).first_("未找到课程信息")
         # 判断是否可报名
         if course["COstatus"] != 101:
             return CourseStatusError()
         user_id = token_to_user_(args.get("token")).id
         user = User.query.filter(User.USid == user_id).first_("未找到用户信息")
+        print(user)
         # TODO 需要查看用户是否有对应的课时余额
-        if not user.get("UStelphone"):
+        if "UStelphone" not in user.keys() or not user["UStelphone"]:
             return UserInfoError()
         su_dict = {
             "SUid": str(uuid.uuid1()),
