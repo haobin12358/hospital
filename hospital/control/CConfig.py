@@ -19,12 +19,12 @@ class CConfig:
         """banner创建/编辑/删除"""
         print(request.data)
         data = parameter_required(('bnpicture', "bnsort",))
-        mpbid = data.get('mpbid')
+        bnid = data.get('bnid')
         bn_dict = {'BNpicture': data.get('bnpicture'),
                     'BNsort': data.get('bnsort'),
                     'contentlink': data.get('contentlink')}
         with db.auto_commit():
-            if not mpbid:
+            if not bnid:
                 """新增"""
                 bn_dict['BNid'] = str(uuid.uuid1())
                 bn_dict['ADid'] = getattr(request, 'user').id
@@ -32,7 +32,7 @@ class CConfig:
                 msg = '添加成功'
             else:
                 """修改/删除"""
-                bn_instance = Banner.query.filter_by_(MPBid=mpbid).first_('未找到该轮播图信息')
+                bn_instance = Banner.query.filter_by_(BNid=bnid).first_('未找到该轮播图信息')
                 if data.get('delete'):
                     bn_instance.update({'isdelete': 1})
                     msg = '删除成功'
@@ -40,7 +40,7 @@ class CConfig:
                     bn_instance.update(bn_dict, null='not')
                     msg = '编辑成功'
             db.session.add(bn_instance)
-        return Success(message=msg, data={'mpbid': bn_instance.BNid})
+        return Success(message=msg, data={'bnid': bn_instance.BNid})
 
     def list_banner(self):
         """小程序轮播图获取"""
