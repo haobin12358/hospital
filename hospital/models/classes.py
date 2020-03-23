@@ -5,7 +5,7 @@ create user: haobin12358
 last update time:2020/3/19 22:23
 """
 import datetime
-from sqlalchemy import Integer, String, Text, Boolean, DateTime, DECIMAL, orm, DATE
+from sqlalchemy import Integer, String, Text, Boolean, DateTime, DECIMAL, orm, DATE, Float
 from sqlalchemy.dialects.mysql import LONGTEXT
 
 from hospital.extensions.base_model import Base, Column
@@ -22,7 +22,7 @@ class Classes(Base):
     DEname = Column(String(255), nullable=False, comment="科室名称")
     CLintroduction = Column(Text, comment="详细介绍")
     CLindex = Column(Integer, default=1, comment="权重")
-    # TODO 增加课时价格
+    CLprice = Column(Float, comment="课时价格")
 
 class Course(Base):
     """
@@ -53,3 +53,14 @@ class Subscribe(Base):
     USid = Column(String(64), comment="用户id")
     UStelphone = Column(String(16), comment="用户手机号")
     SUstatus = Column(Integer, default=201, comment="预约状态{201：已预约，202：已上课，203：已评价}")
+
+class Setmeal(Base):
+    """
+    课程套餐
+    """
+    __tablename__ = "Setmeal"
+    SMid = Column(String(64), primary_key=True)
+    CLid = Column(String(64), comment="课程id")
+    CLname = Column(String(128), comment="课程名称")
+    SMnum = Column(Integer, nullable=False, comment="课时数")
+    SMprice = Column(Float, nullable=False, comment="套餐价格")
