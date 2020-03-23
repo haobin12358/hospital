@@ -235,7 +235,9 @@ class CUser(object):
                             raise ParamsError('请填写正确的手机号码')
                     else:
                         del address_dict['UAtel']
-                    address_dict['UAdefault'] = uadefault
+                    address_dict['UAdefault'] = True if not uadefault and (not default_address or
+                                                                           default_address.UAid == uaid
+                                                                           ) else uadefault
                     user_address.update(address_dict)
                     msg = '更新成功'
             db.session.add(user_address)
