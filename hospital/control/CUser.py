@@ -278,3 +278,12 @@ class CUser(object):
         address.fill('address_info', address_info)
         address.hide('USid')
         return Success(data=address)
+
+    @token_required
+    def info(self):
+        """用户详情"""
+        user = User.query.filter(User.isdelete == false(),
+                                 User.USid == getattr(request, 'user').id).first_('未找到该用户信息')
+        user.fields = ['USname', 'USavatar', 'USgender', 'USlevel', 'UStelphone']
+        user.fill('usbalance', 0)  # todo 对接会员卡/后台查看
+        return Success(data=user)
