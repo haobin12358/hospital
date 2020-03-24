@@ -95,7 +95,7 @@ class CDoctor(object):
 
                 # 执行update
                 if doctor:
-                    update_dict = self._get_update_dict(doctor, data)
+                    update_dict = doctor.get_update_dict(data)
                     if update_dict.get('DOid'):
                         update_dict.pop('DOid')
                     if update_dict.get('DOsort', 0):
@@ -198,14 +198,6 @@ class CDoctor(object):
             doctor.fill('doctorqrpic', dmqrpic.DMmedia)
         else:
             doctor.fill('doctorqrpic', '')
-
-    def _get_update_dict(self, instance_model, data_model):
-        update_dict = dict()
-        for key in instance_model.keys():
-            lower_key = str(key).lower()
-            if data_model.get(lower_key) or data_model.get(lower_key) == 0:
-                update_dict.setdefault(key, data_model.get(lower_key))
-        return update_dict
 
     def _add_or_update_list_pic(self, doctor, list_pic):
         if not isinstance(list_pic, list):

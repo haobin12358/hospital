@@ -16,14 +16,6 @@ class CDepartment(object):
     def __init__(self):
         pass
 
-    def _get_update_dict(self, instance_model, data_model):
-        update_dict = dict()
-        for key in instance_model.keys():
-            lower_key = str(key).lower()
-            if data_model.get(lower_key) or data_model.get(lower_key) == 0:
-                update_dict.setdefault(key, data_model.get(lower_key))
-        return update_dict
-
     def _fill_dep_details(self, dep, index='home'):
         dep.fields = '__all__'
         symptoms = Symptom.query.filter(Symptom.DEid == dep.DEid, Symptom.isdelete == 0).order_by(
@@ -123,7 +115,7 @@ class CDepartment(object):
                 # 执行update
                 if dep:
 
-                    update_dict = self._get_update_dict(dep, data)
+                    update_dict = dep.get_update_dict(data)
                     if update_dict.get('DEid'):
                         update_dict.pop('DEid')
                     if update_dict.get('DEsort'):
