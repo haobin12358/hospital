@@ -230,7 +230,7 @@ class CUser(object):
                     if uadefault and default_address and default_address.UAid != uaid:
                         UserAddress.query.filter(UserAddress.isdelete == false(), UserAddress.USid == usid,
                                                  UserAddress.UAid != user_address.UAid).update({'UAdefault': False})
-                    if '*' not in uatel:
+                    if uatel and '*' not in uatel:
                         if not re.match(r'^1[1-9][0-9]{9}$', address_dict['UAtel']):
                             raise ParamsError('请填写正确的手机号码')
                     else:
