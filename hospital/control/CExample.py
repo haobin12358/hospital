@@ -60,7 +60,7 @@ class CExample(object):
 
                 # 执行update
                 if exm:
-                    update_dict = self._get_update_dict(exm, data)
+                    update_dict = exm.get_update_dict(data)
                     if update_dict.get('EXid'):
                         update_dict.pop('EXid')
                     if update_dict.get('EXtreated'):
@@ -147,14 +147,6 @@ class CExample(object):
             else:
                 current_app.logger.info('该症状关联到的科室已删除 SYid {}'.format(symptom.SYid))
                 exm.fill('dename', '')
-
-    def _get_update_dict(self, instance_model, data_model):
-        update_dict = dict()
-        for key in instance_model.keys():
-            lower_key = str(key).lower()
-            if data_model.get(lower_key) or data_model.get(lower_key) == 0:
-                update_dict.setdefault(key, data_model.get(lower_key))
-        return update_dict
 
     def _trans_time(self, time_str):
         return_str = None
