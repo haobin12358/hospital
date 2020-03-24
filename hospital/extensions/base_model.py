@@ -144,3 +144,11 @@ class Base(db.Model):
 
     def __repr__(self):
         return str(dict(self))
+
+    def get_update_dict(self, data_model):
+        update_dict = dict()
+        for key in self.__table__.columns.keys():
+            lower_key = str(key).lower()
+            if data_model.get(lower_key) or data_model.get(lower_key) == 0:
+                update_dict.setdefault(key, data_model.get(lower_key))
+        return update_dict
