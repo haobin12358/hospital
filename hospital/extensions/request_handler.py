@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-import os
 import re
+import traceback
 from collections import namedtuple
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired
 from flask import current_app, request
@@ -77,7 +77,10 @@ def error_handler(app):
     def framework_error(e):
         if isinstance(e, Success):
             return e
-        current_app.logger.error(e)
+        if isinstance(e, Exception):
+            data = traceback.format_exc()
+            current_app.logger.error(data)
+            # current_app.logger.error(data, exc_info=True)
         if isinstance(e, BaseError):
             return e
         else:
