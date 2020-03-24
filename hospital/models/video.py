@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, String, Text, Boolean
+from sqlalchemy import Integer, String, Text
 from hospital.extensions.base_model import Base, Column
 
 
@@ -11,6 +11,7 @@ class Video(Base):
     VIthumbnail = Column(Text, url=True, comment='视频缩略图')
     SEid = Column(String(64), comment='系列ID')
     VIsort = Column(Integer, default=0, comment='排序')
+    VIbriefIntroduction = Column(Text, comment='简介')
 
 
 class Series(Base):
