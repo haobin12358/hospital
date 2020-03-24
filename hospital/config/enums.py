@@ -25,13 +25,20 @@ class AdminStatus(Enum):
 
 
 class Gender(Enum):
-    man = 0, '男'
-    woman = 1, '女'
+    man = 1, '男'
+    woman = 2, '女'
+
 
 class CourseStatus(Enum):
     not_start = (101, '未开始')
     had_start = (102, '已开始')
     had_end = (103, '已结束')
+
+
+class FamilyRole(Enum):
+    father = 1, '父亲'
+    mother = 2, '母亲'
+    child = 3, '孩子'
 
 
 if __name__ == '__main__':
