@@ -14,6 +14,7 @@ class AUser(Resource):
             'areas': self.cuser.get_areas,
             'address_list': self.cuser.address_list,
             'address': self.cuser.address,
+            'info': self.cuser.info,
         }
         return apis
 
