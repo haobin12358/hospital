@@ -50,7 +50,7 @@ class CUser(object):
                 current_app.logger.info('get exist user by openid: {}'.format(user.__dict__))
                 user.update({'USavatar': head,
                              'USname': userinfo.get('nickName'),
-                             'USgender': sex,
+                             # 'USgender': sex,
                              'USunionid': unionid,
                              })
             else:
@@ -58,7 +58,7 @@ class CUser(object):
                 user_dict = {'USid': str(uuid.uuid1()),
                              'USname': userinfo.get('nickName'),
                              'USavatar': head,
-                             'USgender': sex,
+                             # 'USgender': sex,
                              'USopenid': openid,
                              'USunionid': unionid,
                              }

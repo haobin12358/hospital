@@ -5,8 +5,6 @@ from datetime import datetime
 from flask import current_app
 import uuid
 
-from sqlalchemy import or_
-
 from hospital.config.enums import Gender
 from hospital.extensions.interface.user_interface import admin_required, is_admin
 from hospital.extensions.success_response import Success
@@ -43,6 +41,7 @@ class CExample(object):
 
         return Success('获取成功', data=examples)
 
+    @admin_required
     def add_or_update_example(self):
         data = parameter_required()
         exid = data.get('exid')
