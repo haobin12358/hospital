@@ -21,4 +21,3 @@ class Series(Base):
     SEname = Column(String(255), comment='系列名')
     DOid = Column(String(64), comment='医生id')
     SEsort = Column(Integer, default=0, comment='排序')
-
