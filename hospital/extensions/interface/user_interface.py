@@ -1,5 +1,24 @@
 from flask import request
-from hospital.extensions.error_response import AuthorityError
+from hospital.extensions.error_response import AuthorityError, TokenError
+
+
+def is_anonymous():
+    """是否是游客"""
+    return not hasattr(request, 'user')
+
+
+def is_user():
+    """是否是普通用户"""
+    return hasattr(request, 'user') and request.user.model == 'User'
+
+
+def token_required(func):
+    def inner(self, *args, **kwargs):
+        if not is_anonymous():
+            return func(self, *args, **kwargs)
+        raise TokenError()
+
+    return inner
 
 
 def is_admin():
