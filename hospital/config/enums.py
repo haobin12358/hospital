@@ -36,9 +36,16 @@ class CourseStatus(Enum):
 
 
 class FamilyRole(Enum):
+    myself = 1, '本人'
+    spouse = 2, '配偶'
+    child = 3, '孩子'
+
+
+class FamilyType(Enum):
     father = 1, '父亲'
     mother = 2, '母亲'
-    child = 3, '孩子'
+    son = 3, '儿子'
+    daughter = 4, '女儿'
 
 
 if __name__ == '__main__':

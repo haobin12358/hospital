@@ -15,6 +15,7 @@ class AUser(Resource):
             'address_list': self.cuser.address_list,
             'address': self.cuser.address,
             'info': self.cuser.info,
+            'list_roles': self.cuser.list_roles,
         }
         return apis
 
@@ -23,6 +24,7 @@ class AUser(Resource):
             'mp_login': self.cuser.mini_program_login,
             'test_login': self.cuser.test_login,
             'set_address': self.cuser.set_address,
+            'set_family': self.cuser.set_family,
 
         }
 
