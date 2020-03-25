@@ -47,6 +47,8 @@ class CDoctor(object):
         if deid:
             index = 'dep'
             filter_args.append(Doctor.DEid == deid)
+            if doname:
+                filter_args.append(Doctor.DOname.ilike('%{}%'.format(doname)))
         elif doname:
             index = 'doname'
             # todo doname 字段校验。
@@ -64,6 +66,7 @@ class CDoctor(object):
                 doctor.add('DOskilledIn')
             if index == 'doname':
                 # todo 好评率 接诊次数
+                doctor.add('DOskilledIn')
                 doctor.fill('favorablerate', '100%')
                 doctor.fill('treatnum', '0')
             if index == 'back':
@@ -157,9 +160,9 @@ class CDoctor(object):
             # 更新医生二维码
             if data.get('doctorqrpic'):
                 self._add_or_update_media_pic(doctor, data.get('doctorqrpic'), DoctorMetiaType.qrpic.value)
-            current_app.logger.info('创建科室 {}'.format(data.get('dename')))
+            current_app.logger.info('创建医生 {}'.format(data.get('doname')))
             db.session.add(doctor)
-        return Success('创建科室成功', data=doid)
+        return Success('创建医生成功', data=doid)
 
     def _fill_department(self, doctor):
         dep = Departments.query.filter(
