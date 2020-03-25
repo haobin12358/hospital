@@ -50,7 +50,7 @@ class CUser(object):
                 current_app.logger.info('get exist user by openid: {}'.format(user.__dict__))
                 user.update({'USavatar': head,
                              'USname': userinfo.get('nickName'),
-                             # 'USgender': sex,
+                             'USgender': sex,
                              'USunionid': unionid,
                              })
             else:
@@ -58,7 +58,7 @@ class CUser(object):
                 user_dict = {'USid': str(uuid.uuid1()),
                              'USname': userinfo.get('nickName'),
                              'USavatar': head,
-                             # 'USgender': sex,
+                             'USgender': sex,
                              'USopenid': openid,
                              'USunionid': unionid,
                              }
@@ -230,7 +230,7 @@ class CUser(object):
                     if uadefault and default_address and default_address.UAid != uaid:
                         UserAddress.query.filter(UserAddress.isdelete == false(), UserAddress.USid == usid,
                                                  UserAddress.UAid != user_address.UAid).update({'UAdefault': False})
-                    if '*' not in uatel:
+                    if uatel and '*' not in uatel:
                         if not re.match(r'^1[1-9][0-9]{9}$', address_dict['UAtel']):
                             raise ParamsError('请填写正确的手机号码')
                     else:
@@ -278,3 +278,12 @@ class CUser(object):
         address.fill('address_info', address_info)
         address.hide('USid')
         return Success(data=address)
+
+    @token_required
+    def info(self):
+        """用户详情"""
+        user = User.query.filter(User.isdelete == false(),
+                                 User.USid == getattr(request, 'user').id).first_('未找到该用户信息')
+        user.fields = ['USname', 'USavatar', 'USgender', 'USlevel', 'UStelphone']
+        user.fill('usbalance', 0)  # todo 对接会员卡/后台查看
+        return Success(data=user)
