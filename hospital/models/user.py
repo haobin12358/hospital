@@ -14,7 +14,7 @@ class User(Base):
     USid = Column(String(64), primary_key=True)
     USname = Column(String(255), nullable=False, comment='用户名')
     USavatar = Column(Text, url=True, comment='用户头像')
-    USgender = Column(Integer, default=0, comment='性别 {0: unknown 1：male，2：female}')
+    USgender = Column(Integer, default=2, comment='性别 {0: unknown 1：male，2：female}')
     USlevel = Column(Integer, default=0, comment='vip等级')
     USintegral = Column(Integer, default=0, comment='用户积分')
     USopenid = Column(Text, comment='小程序 openid')
@@ -28,7 +28,8 @@ class Family(Base):
     __tablename__ = "Family"
     FAid = Column(String(64), primary_key=True)
     USid = Column(String(64), comment='用户ID')
-    FAtype = Column(Integer, default=0, comment='家人类型 0 孩子，1 父亲，2 母亲')
+    FARole = Column(Integer, default=3, comment='家人类型 1，本人 2，配偶 3，孩子')
+    FAtype = Column(Integer, default=2, comment='1, 父亲 2，母亲 3，儿子 4，女儿')
     FAname = Column(String(255), comment='家人姓名')
     FAage = Column(Integer, default=1, comment='家人年龄')
     FAidentification = Column(String(18), comment='身份证号')
