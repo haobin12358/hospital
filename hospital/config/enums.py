@@ -28,10 +28,16 @@ class Gender(Enum):
     man = 0, '男'
     woman = 1, '女'
 
+
 class CourseStatus(Enum):
     not_start = (101, '未开始')
     had_start = (102, '已开始')
     had_end = (103, '已结束')
+
+
+class VideoType(Enum):
+    normal = 0, '医生单视频'
+    series = 1, '需要关联剧集'
 
 
 if __name__ == '__main__':
