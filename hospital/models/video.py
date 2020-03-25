@@ -10,6 +10,8 @@ class Video(Base):
     VIname = Column(String(255), comment='视频名')
     VIthumbnail = Column(Text, url=True, comment='视频缩略图')
     SEid = Column(String(64), comment='系列ID')
+    DOid = Column(String(64), comment='医生id')
+    VIdur = Column(String(64), comment='时长')
     VIsort = Column(Integer, default=0, comment='排序')
     VIbriefIntroduction = Column(Text, comment='简介')
 
