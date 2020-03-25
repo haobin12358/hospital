@@ -81,7 +81,7 @@ class CDoctor(object):
     def add_or_update_doctor(self):
         data = parameter_required()
         doid = data.get('doid')
-        password = data.get('dopassword')
+        # password = data.get('dopassword')
         with db.auto_commit():
             if doid:
                 doctor = Doctor.query.filter(
@@ -106,12 +106,9 @@ class CDoctor(object):
                             int(update_dict.get('DOsort'))
                         except:
                             raise ParamsError('排序请输入整数')
-                    # if update_dict.get('DOpassword'):
+                    if update_dict.get('DOpassword'):
+                        update_dict.pop('DOpassword')
 
-                    if password and password != '*' * 6:
-                        self.__check_password(password)
-                        password = generate_password_hash(password)
-                        update_dict['DOpassword'] = password
                     # 更新医生列表图片
                     if data.get('doctorlistpic'):
                         self._add_or_update_list_pic(doctor, data.get('doctorlistpic'))
