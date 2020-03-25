@@ -25,8 +25,8 @@ class AdminStatus(Enum):
 
 
 class Gender(Enum):
-    man = 0, '男'
-    woman = 1, '女'
+    man = 1, '男'
+    woman = 2, '女'
 
 
 class CourseStatus(Enum):
@@ -35,9 +35,10 @@ class CourseStatus(Enum):
     had_end = (103, '已结束')
 
 
-class VideoType(Enum):
-    normal = 0, '医生单视频'
-    series = 1, '需要关联剧集'
+class FamilyRole(Enum):
+    father = 1, '父亲'
+    mother = 2, '母亲'
+    child = 3, '孩子'
 
 
 if __name__ == '__main__':
