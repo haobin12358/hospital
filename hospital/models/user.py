@@ -28,7 +28,7 @@ class Family(Base):
     __tablename__ = "Family"
     FAid = Column(String(64), primary_key=True)
     USid = Column(String(64), comment='用户ID')
-    FARole = Column(Integer, default=3, comment='家人类型 1，本人 2，配偶 3，孩子')
+    FArole = Column(Integer, default=3, comment='家人类型 1，本人 2，配偶 3，孩子')
     FAtype = Column(Integer, default=2, comment='1, 父亲 2，母亲 3，儿子 4，女儿')
     FAname = Column(String(255), comment='家人姓名')
     FAage = Column(Integer, default=1, comment='家人年龄')
