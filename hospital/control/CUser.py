@@ -1,26 +1,27 @@
 """
 本文件用于处理用户相关操作
 create user: wiilz
-last update time:2020/3/24 01:28
+last update time:2020/3/26 04:03
 """
 import re
 import os
 import uuid
 import requests
 from datetime import datetime
-from sqlalchemy import false, true
+from sqlalchemy import false, true, or_
 from flask import current_app, request
-
+from id_validator import validator
 from hospital.common.default_head import GithubAvatarGenerator
+from hospital.config.enums import FamilyRole, FamilyType, Gender
 from hospital.config.secret import MiniProgramAppId, MiniProgramAppSecret
-from hospital.extensions.error_response import WXLoginError, ParamsError, NotFound
+from hospital.extensions.error_response import WXLoginError, ParamsError, NotFound, DumpliError
 from hospital.extensions.interface.user_interface import token_required
 from hospital.extensions.params_validates import parameter_required
 from hospital.extensions.register_ext import db
 from hospital.extensions.success_response import Success
 from hospital.extensions.token_handler import usid_to_token
 from hospital.extensions.weixin import WeixinLogin
-from hospital.models import User, AddressProvince, AddressCity, AddressArea, UserAddress
+from hospital.models import User, AddressProvince, AddressCity, AddressArea, UserAddress, Family
 
 
 class CUser(object):
@@ -287,3 +288,106 @@ class CUser(object):
         user.fields = ['USname', 'USavatar', 'USgender', 'USlevel', 'UStelphone']
         user.fill('usbalance', 0)  # todo 对接会员卡/后台查看
         return Success(data=user)
+
+    @token_required
+    def list_roles(self):
+        usid = getattr(request, 'user').id
+        data = [{'en': FamilyRole.myself.name, 'zh': FamilyRole.myself.zh_value, 'value': FamilyRole.myself.value,
+                 'disable': bool(self._valid_exist_family_role([Family.USid == usid,
+                                                                Family.FArole == FamilyRole.myself.value], ))},
+                {'en': FamilyRole.spouse.name, 'zh': FamilyRole.spouse.zh_value, 'value': FamilyRole.spouse.value,
+                 'disable': bool(self._valid_exist_family_role([Family.USid == usid,
+                                                                Family.FArole == FamilyRole.spouse.value], ))},
+                {'en': FamilyRole.child.name, 'zh': FamilyRole.child.zh_value, 'value': FamilyRole.child.value,
+                 'disable': False}]
+        return Success(data=data)
+
+    @token_required
+    def set_family(self):
+        """设置家人"""
+        data = parameter_required({'faname': '姓名', 'fatel': '手机号码',
+                                   'faidentification': '身份证号', 'aaid': '居住地'
+                                   })
+        user = User.query.filter(User.isdelete == false(),
+                                 User.USid == getattr(request, 'user').id).first_('用户信息有误')
+        faname, fatel, faidentification, aaid, farole = map(lambda x: data.get(x),
+                                                            ('faname', 'fatel', 'faidentification', 'aaid', 'farole'))
+        faid = data.get('faid')
+        if not re.match(r'^1[1-9][0-9]{9}$', str(fatel)):
+            raise ParamsError('请填写正确的手机号码')
+        if not re.match(r'^[1-3]$', str(farole)):
+            raise ParamsError('参数错误：farole')
+        id_valid = validator.get_info(faidentification)
+        if not id_valid:
+            raise ParamsError('请输入正确的身份证号码')
+        age = self._calculate_age(id_valid.get('birthday_code'))
+        # id_valid.get('sex') 1 为男性，0 为女性
+        gender = Gender.man.value if str(id_valid.get('sex')) == str(Gender.man.value) else Gender.woman.value
+        AddressArea.query.filter(AddressArea.AAid == aaid).first_('参数错误：aaid')
+
+        fatype, faself = self._figure_out_family_role(str(farole), str(gender))
+
+        family_dict = {'USid': user.USid,
+                       'FArole': farole,
+                       'FAtype': fatype,
+                       'FAname': faname,
+                       'FAage': age,
+                       'FAidentification': faidentification,
+                       'FAtel': fatel,
+                       'FAgender': gender,
+                       'AAid': aaid,
+                       'FAaddress': self._combine_address_by_area_id(aaid),
+                       'FAself': faself}
+        with db.auto_commit():
+            if not faid:
+                if str(farole) == str(FamilyRole.myself.value) or str(farole) == str(FamilyRole.spouse.value):
+                    if self._valid_exist_family_role([Family.USid == user.USid, Family.FArole == farole], ):
+                        raise DumpliError('您已添加过 {}'.format(FamilyRole(farole).zh_value))
+                else:
+                    if self._valid_exist_family_role([Family.USid == user.USid,
+                                                      or_(Family.FAidentification == faidentification,
+                                                          Family.FAname == faname)], ):
+                        raise DumpliError('您已添加过 {}'.format(faname))
+                family_dict['FAid'] = str(uuid.uuid1())
+                msg = '添加成功'
+                family = Family.create(family_dict)
+            else:
+                family = self._valid_exist_family_role(Family.FAid == faid, msg='未找到任何信息')
+                if str(family.FArole) != str(farole) and self._valid_exist_family_role(
+                        [Family.USid == user.USid, Family.FArole == farole], ):
+                    raise ParamsError('您已创建过{},请到相应已有身份中修改信息'.format(FamilyRole(farole).zh_value))
+                family.update(family_dict)
+                msg = '更新成功'
+            if faself:
+                current_app.logger.info('添加家人为本人，更新user资料')
+                user.update({'UStelphone': fatel, 'UScardid': faidentification})
+            db.session.add_all([family, user])
+        return Success(message=msg, data={'faid': family.FAid})
+
+    @staticmethod
+    def _figure_out_family_role(farole, gender):
+        faself = False
+        if farole == str(FamilyRole.myself.value):
+            faself = True
+            res_type = FamilyType.father.value if gender == str(Gender.man.value) else FamilyType.mother.value
+        elif farole == str(FamilyRole.spouse.value):
+            res_type = FamilyType.father.value if gender == str(Gender.man.value) else FamilyType.mother.value
+        else:
+            res_type = FamilyType.son.value if gender == str(Gender.man.value) else FamilyType.daughter.value
+        return res_type, faself
+
+    @staticmethod
+    def _valid_exist_family_role(filter_args, msg=None):
+        return Family.query.filter(Family.isdelete == false(), *filter_args).first_(msg)
+
+    @staticmethod
+    def _calculate_age(birth_s):
+        """计算年龄"""
+        birth_d = datetime.strptime(birth_s, "%Y-%m-%d")
+        today_d = datetime.now()
+        birth_t = birth_d.replace(year=today_d.year)
+        if today_d > birth_t:
+            age = today_d.year - birth_d.year
+        else:
+            age = today_d.year - birth_d.year - 1
+        return age
