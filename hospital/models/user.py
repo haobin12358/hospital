@@ -4,7 +4,7 @@
 create user: wiilz
 last update time:2020/3/15 22:22
 """
-from sqlalchemy import Integer, String, Text, Boolean
+from sqlalchemy import Integer, String, Text, Boolean, orm
 from hospital.extensions.base_model import Base, Column
 
 
@@ -38,6 +38,11 @@ class Family(Base):
     AAid = Column(String(64), comment='居住地区域ID')
     FAaddress = Column(Text, comment='家人居住地')
     FAself = Column(Boolean, default=False, comment='是否是本人')
+
+    @orm.reconstructor
+    def __init__(self):
+        super(Family, self).__init__()
+        self.hide('USid')
 
 
 class UserAddress(Base):
