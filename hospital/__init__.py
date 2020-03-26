@@ -3,6 +3,7 @@ from flask import Flask
 from flask import Blueprint
 from flask_cors import CORS
 
+from .api.AFile import AFile
 from .api.AHello import AHello
 from .api.AConfig import AConfig
 from .api.AAdmin import AAdmin
@@ -28,6 +29,7 @@ def register(app):
     bp.add_url_rule('/department/<string:department>', view_func=ADepartment.as_view('department'))
     bp.add_url_rule('/classes/<string:classes>', view_func=AClasses.as_view('classes'))
     bp.add_url_rule('/user/<string:user>', view_func=AUser.as_view('user'))
+    bp.add_url_rule('/file/<string:file>', view_func=AFile.as_view('file'))
     bp.add_url_rule('/example/<string:example>', view_func=AExample.as_view('example'))
     bp.add_url_rule('/video/<string:video>', view_func=AVideo.as_view('video'))
     app.register_blueprint(bp)
