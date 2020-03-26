@@ -13,7 +13,8 @@ class AClasses(Resource):
             "get_course": self.cclasses.get_course,
             "get_course_by_doctor_month": self.cclasses.get_course_by_doctor_month,
             "get_course_by_doctor_day": self.cclasses.get_course_by_doctor_day,
-            "get_course_by_doctor_ampm": self.cclasses.get_course_by_doctor_ampm
+            "get_course_by_doctor_ampm": self.cclasses.get_course_by_doctor_ampm,
+            "get_setmeal": self.cclasses.get_setmeal
         }
 
         return apis
@@ -23,7 +24,8 @@ class AClasses(Resource):
             "set_class": self.cclasses.set_class,
             "set_course": self.cclasses.set_course,
             "delete_course": self.cclasses.delete_course,
-            "subscribe_classes": self.cclasses.subscribe_classes
+            "subscribe_classes": self.cclasses.subscribe_classes,
+            "set_setmeal": self.cclasses.set_setmeal
         }
 
         return apis
