@@ -117,12 +117,12 @@ class CVideo(object):
                 if video:
                     update_dict = video.get_update_dict(data)
                     if update_dict.get('VIid'):
-                        update_dict.pop('SEid')
+                        update_dict.pop('VIid')
                     if update_dict.get('DOid'):
                         update_dict.pop('DOid')
                     if update_dict.get('VIsort', 0):
                         try:
-                            int(update_dict.get('SEsort'))
+                            int(update_dict.get('VIsort'))
                         except:
                             raise ParamsError('排序请输入整数')
 
@@ -144,20 +144,20 @@ class CVideo(object):
                     int(data.get('visort', 0))
                 except:
                     raise ParamsError('排序请输入整数')
-            doctor = Series.create({
+            doctor = Video.create({
                 'DOid': doid,
                 'VIid': viid,
                 'VIname': data.get('viname'),
                 'VImedia': data.get('vimedia'),
                 'VIthumbnail': data.get('vithumbnail'),
                 'SEid': data.get('seid'),
-                'VIsename': data.get('visename'),
+                'VIdur': data.get('vidur'),
                 'VIbriefIntroduction': data.get('vibriefintroduction'),
                 'VIsort': data.get('visort', 0),
             })
-            current_app.logger.info('创建剧集 {}'.format(data.get('sename')))
+            current_app.logger.info('创建视频 {}'.format(data.get('viname')))
             db.session.add(doctor)
-        return Success('创建剧集成功', data=doid)
+        return Success('创建视频成功', data=viid)
 
     def get_video(self):
         data = parameter_required('viid')
