@@ -191,6 +191,21 @@ class CUser(object):
             address_str = ''
         return address_str
 
+    @staticmethod
+    def _area_detail(area_id):
+        """通过aaid返回三级地址详情"""
+        apid, apname, acid, acname, aaname = db.session.query(AddressProvince.APid, AddressProvince.APname,
+                                                              AddressCity.ACid, AddressCity.ACname, AddressArea.AAname
+                                                              ).filter(AddressArea.AAid == area_id,
+                                                                       AddressCity.ACid == AddressArea.ACid,
+                                                                       AddressProvince.APid == AddressCity.APid,
+                                                                       ).first()
+        address_info = {'province': {'apid': apid, 'apname': apname},
+                        'city': {'acid': acid, 'acname': acname},
+                        'area': {'aaid': area_id, 'acname': aaname}
+                        }
+        return address_info
+
     @token_required
     def set_address(self):
         """用户地址编辑"""
@@ -265,16 +280,7 @@ class CUser(object):
         address = UserAddress.query.filter(UserAddress.isdelete == false(),
                                            UserAddress.UAid == args.get('uaid'),
                                            UserAddress.USid == usid).first_('未找到该地址信息')
-        apid, apname, acid, acname, aaname = db.session.query(AddressProvince.APid, AddressProvince.APname,
-                                                              AddressCity.ACid, AddressCity.ACname, AddressArea.AAname
-                                                              ).filter(AddressArea.AAid == address.AAid,
-                                                                       AddressCity.ACid == AddressArea.ACid,
-                                                                       AddressProvince.APid == AddressCity.APid,
-                                                                       ).first()
-        address_info = {'province': {'apid': apid, 'apname': apname},
-                        'city': {'acid': acid, 'acname': acname},
-                        'area': {'aaid': address.AAid, 'acname': aaname}
-                        }
+        address_info = self._area_detail(address.AAid)
 
         address.fill('address_info', address_info)
         address.hide('USid')
@@ -303,17 +309,44 @@ class CUser(object):
         return Success(data=data)
 
     @token_required
+    def list_family(self):
+        """家人列表"""
+        family_list = Family.query.filter(Family.isdelete == false(),
+                                          Family.USid == getattr(request, 'user').id).all()
+        for fa in family_list:
+            fa.fill('fagender_zh', Gender(fa.FAgender).zh_value)
+            fa.fill('fatype_zh', FamilyType(fa.FAtype).zh_value)
+            fa.fill('farole_zh', FamilyRole(fa.FArole).zh_value)
+
+        return Success(data=family_list)
+
+    @token_required
+    def family(self):
+        """家人详情"""
+        args = parameter_required('faid')
+        family = self._valid_exist_family_role([Family.FAid == args.get('faid')], msg='未找到任何信息')
+        family.fill('address_info', self._area_detail(family.AAid))
+        family.fill('farole_zh', FamilyRole(family.FArole).zh_value)
+        return Success(data=family)
+
+    @token_required
     def set_family(self):
         """设置家人"""
-        data = parameter_required({'faname': '姓名', 'fatel': '手机号码',
-                                   'faidentification': '身份证号', 'aaid': '居住地'
-                                   })
+        data = request.json or {}
         user = User.query.filter(User.isdelete == false(),
                                  User.USid == getattr(request, 'user').id).first_('用户信息有误')
         faname, fatel, faidentification, aaid, farole = map(lambda x: data.get(x),
                                                             ('faname', 'fatel', 'faidentification', 'aaid', 'farole'))
         faid = data.get('faid')
-        if not re.match(r'^1[1-9][0-9]{9}$', str(fatel)):
+        required_dict = {'faname': '姓名', 'fatel': '手机号码', 'farole': '身份',
+                         'faidentification': '身份证号', 'aaid': '居住地'
+                         }
+        if str(farole) == str(FamilyRole.child.value):
+            del required_dict['fatel']
+        parameter_required(required_dict, datafrom=data)
+        if not self._verid_chinese(str(faname)):
+            raise ParamsError('姓名中包含非汉语字符, 请检查姓名是否填写错误')
+        if fatel and not re.match(r'^1[1-9][0-9]{9}$', str(fatel)):
             raise ParamsError('请填写正确的手机号码')
         if not re.match(r'^[1-3]$', str(farole)):
             raise ParamsError('参数错误：farole')
@@ -342,26 +375,28 @@ class CUser(object):
             if not faid:
                 if str(farole) == str(FamilyRole.myself.value) or str(farole) == str(FamilyRole.spouse.value):
                     if self._valid_exist_family_role([Family.USid == user.USid, Family.FArole == farole], ):
-                        raise DumpliError('您已添加过 {}'.format(FamilyRole(farole).zh_value))
-                else:
-                    if self._valid_exist_family_role([Family.USid == user.USid,
-                                                      or_(Family.FAidentification == faidentification,
-                                                          Family.FAname == faname)], ):
-                        raise DumpliError('您已添加过 {}'.format(faname))
+                        raise DumpliError('您已添加过 {} 角色'.format(FamilyRole(farole).zh_value))
+                if self._valid_exist_family_role([Family.USid == user.USid,
+                                                  or_(Family.FAidentification == faidentification,
+                                                      Family.FAname == faname)], ):
+                    raise DumpliError('您已添加过姓名为"{}"或身份证号码为"{}"的家人，'
+                                      '请检查是否填写错误'.format(faname, faidentification))
                 family_dict['FAid'] = str(uuid.uuid1())
                 msg = '添加成功'
                 family = Family.create(family_dict)
             else:
-                family = self._valid_exist_family_role(Family.FAid == faid, msg='未找到任何信息')
+                family = self._valid_exist_family_role((Family.FAid == faid,), msg='未找到任何信息')
                 if str(family.FArole) != str(farole) and self._valid_exist_family_role(
-                        [Family.USid == user.USid, Family.FArole == farole], ):
+                        [Family.FAid != faid, Family.USid == user.USid, Family.FArole == farole], ):
                     raise ParamsError('您已创建过{},请到相应已有身份中修改信息'.format(FamilyRole(farole).zh_value))
                 family.update(family_dict)
                 msg = '更新成功'
+
             if faself:
                 current_app.logger.info('添加家人为本人，更新user资料')
-                user.update({'UStelphone': fatel, 'UScardid': faidentification})
+                user.update({'UStelphone': fatel, 'UScardid': faidentification, 'USgender': gender})
             db.session.add_all([family, user])
+
         return Success(message=msg, data={'faid': family.FAid})
 
     @staticmethod
@@ -391,3 +426,13 @@ class CUser(object):
         else:
             age = today_d.year - birth_d.year - 1
         return age
+
+    @staticmethod
+    def _verid_chinese(name):
+        """
+        校验是否是纯汉字
+        :param name:
+        :return: 汉字, 如果有其他字符返回 []
+        """
+        RE_CHINESE = re.compile(r'^[\u4e00-\u9fa5]{1,8}$')
+        return RE_CHINESE.findall(name)
