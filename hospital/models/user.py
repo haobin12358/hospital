@@ -2,7 +2,7 @@
 """
 用户相关信息：家人，地址等
 create user: wiilz
-last update time:2020/3/27 14:50
+last update time:2020/3/28 22:22
 """
 from sqlalchemy import Integer, String, Text, Boolean, orm
 from hospital.extensions.base_model import Base, Column
@@ -66,3 +66,11 @@ class UserIntegral(Base):
     UIintegral = Column(Integer, comment='该动作产生的积分变化数')
     UIaction = Column(Integer, default=1, comment='积分变动原因')
     UItype = Column(Integer, default=1, comment='积分变动类型 1 收入 2 支出')
+
+
+class IdentifyingCode(Base):
+    """验证码"""
+    __tablename__ = "IdentifyingCode"
+    ICid = Column(String(64), primary_key=True)
+    ICtelphone = Column(String(14), nullable=False)  # 获取验证码的手机号
+    ICcode = Column(String(8), nullable=False)  # 获取到的验证码
