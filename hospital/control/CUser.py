@@ -473,11 +473,13 @@ class CUser(object):
             })
             db.session.add(new_code)
 
-        params = {"code": code}
-        response_send_message = SendSMS(tel, params)
-
-        if not response_send_message:
-            raise StatusError('发送验证码失败')
+            try:
+                response_send_message = SendSMS(tel, {"code": code})
+                if not response_send_message:
+                    raise NotImplementedError
+            except Exception as e:
+                current_app.logger.error('send identifying code error : {}'.format(e))
+                raise StatusError('验证码获取失败')
 
         response = {'telphone': tel}
         return Success('获取验证码成功', data=response)
