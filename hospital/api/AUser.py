@@ -27,7 +27,7 @@ class AUser(Resource):
             'test_login': self.cuser.test_login,
             'set_address': self.cuser.set_address,
             'set_family': self.cuser.set_family,
-
+            'identifying_code': self.cuser.send_identifying_code,
         }
 
         return apis

@@ -14,7 +14,7 @@ from hospital.extensions.request_handler import token_to_user_
 from hospital.extensions.params_validates import parameter_required
 from hospital.extensions.error_response import ParamsError, AuthorityError, UserInfoError, CourseStatusError
 from hospital.models.departments import Doctor, Departments
-from hospital.models.classes import Classes, Course, Subscribe
+from hospital.models.classes import Classes, Course, Subscribe, Setmeal
 from hospital.models.user import User
 from hospital.config.enums import CourseStatus
 
@@ -27,14 +27,15 @@ class CClasses:
         """
         if not (is_admin() or is_hign_level_admin()):
             return AuthorityError('无权限')
-        data = parameter_required(('clname', "clpicture", "deid", "clintroduction"))
+        data = parameter_required(('clname', "clpicture", "deid", "clintroduction", "clprice"))
         clid = data.get('clid')
         department = Departments.query.filter(Departments.DEid == data.get("deid")).first_("未找到科室信息")
         cl_dict = {'CLname': data.get('clname'),
                    'CLpicture': data.get('clpicture'),
                    'DEid': data.get('deid'),
                    'DEname': department['DEname'],
-                   'CLintroduction': data.get('clintroduction')}
+                   'CLintroduction': data.get('clintroduction'),
+                   'CLprice': data.get('clprice')}
         with db.auto_commit():
             if not clid:
                 """新增"""
@@ -302,3 +303,58 @@ class CClasses:
             db.session.add(su_instance)
 
         return Success("预约成功")
+
+    def set_setmeal(self):
+        """
+        新增/修改/删除课时套餐
+        """
+        if not (is_admin() or is_hign_level_admin()):
+            return AuthorityError('无权限')
+        data = parameter_required(('clid', 'smnum', 'smprice'))
+        smid = data.get('smid')
+        classes = Classes.query.filter(Classes.isdelete == 0, Classes.CLid == data.get('clid')).first_("未找到该课程信息")
+        clname = classes["CLname"]
+        sm_dict = {
+            "CLid": data.get('clid'),
+            "CLname": clname,
+            "SMnum": data.get('smnum'),
+            "SMprice": data.get('smprice')
+        }
+        with db.auto_commit():
+            if not smid:
+                """新增"""
+                sm_dict['SMid'] = str(uuid.uuid1())
+                sm_instance = Setmeal.create(sm_dict)
+                msg = '添加成功'
+            else:
+                """修改/删除"""
+                sm_instance = Setmeal.query.filter_by_(SMid=smid).first_('未找到该轮播图信息')
+                if data.get('delete'):
+                    sm_instance.update({'isdelete': 1})
+                    msg = '删除成功'
+                else:
+                    sm_instance.update(sm_dict, null='not')
+                    msg = '编辑成功'
+            db.session.add(sm_instance)
+        return Success(message=msg, data={'smid': sm_instance.SMid})
+
+    def get_setmeal(self):
+        """
+        获取课时套餐
+        """
+        if is_admin() or is_hign_level_admin():
+            setmeal = Setmeal.query.filter(Setmeal.isdelete == 0).all_with_page()
+            return Success(message="获取课时套餐成功", data=setmeal)
+        else:
+            args = parameter_required(('clid',))
+            classes = Classes.query.filter(Classes.isdelete == 0, Classes.CLid == args.get('clid')).first_("未找到该课程信息")
+            setmeal = Setmeal.query.filter(Setmeal.isdelete == 0, Setmeal.CLid == args.get("clid")).all()
+            setmeal.append({
+                "SMid": "1",
+                "CLid": args.get('clid'),
+                "CLname": classes["CLname"],
+                "SMnum": 1,
+                "SMprice": classes["CLprice"]
+            })
+            setmeal.sort(key=lambda x: x["SMnum"])
+            return Success(message="获取课时套餐成功", data=setmeal)

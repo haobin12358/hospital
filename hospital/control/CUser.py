@@ -6,22 +6,24 @@ last update time:2020/3/26 18:17
 import re
 import os
 import uuid
+import random
 import requests
 from datetime import datetime
 from sqlalchemy import false, true, or_
 from flask import current_app, request
 from id_validator import validator
 from hospital.common.default_head import GithubAvatarGenerator
+from hospital.common.identifying_code import SendSMS
 from hospital.config.enums import FamilyRole, FamilyType, Gender
 from hospital.config.secret import MiniProgramAppId, MiniProgramAppSecret
-from hospital.extensions.error_response import WXLoginError, ParamsError, NotFound, DumpliError
+from hospital.extensions.error_response import WXLoginError, ParamsError, NotFound, DumpliError, StatusError
 from hospital.extensions.interface.user_interface import token_required
 from hospital.extensions.params_validates import parameter_required
 from hospital.extensions.register_ext import db
 from hospital.extensions.success_response import Success
 from hospital.extensions.token_handler import usid_to_token
 from hospital.extensions.weixin import WeixinLogin
-from hospital.models import User, AddressProvince, AddressCity, AddressArea, UserAddress, Family
+from hospital.models import User, AddressProvince, AddressCity, AddressArea, UserAddress, Family, IdentifyingCode
 
 
 class CUser(object):
@@ -312,7 +314,8 @@ class CUser(object):
     def list_family(self):
         """家人列表"""
         family_list = Family.query.filter(Family.isdelete == false(),
-                                          Family.USid == getattr(request, 'user').id).all()
+                                          Family.USid == getattr(request, 'user').id
+                                          ).order_by(Family.FAtype.asc()).all()
         for fa in family_list:
             fa.fill('fagender_zh', Gender(fa.FAgender).zh_value)
             fa.fill('fatype_zh', FamilyType(fa.FAtype).zh_value)
@@ -436,3 +439,47 @@ class CUser(object):
         """
         RE_CHINESE = re.compile(r'^[\u4e00-\u9fa5]{1,8}$')
         return RE_CHINESE.findall(name)
+
+    @token_required
+    def send_identifying_code(self):
+        """发送验证码"""
+        args = parameter_required('telphone')
+        tel = args.get('telphone')
+        if not tel or not re.match(r'^1[1-9][0-9]{9}$', str(tel)):
+            raise ParamsError('请输入正确的手机号码')
+        # 拼接验证码字符串（6位）
+        code = ""
+        while len(code) < 6:
+            item = random.randint(1, 9)
+            code = code + str(item)
+
+        time_now = datetime.now()
+        # 根据电话号码获取时间
+        time_up = IdentifyingCode.query.filter(IdentifyingCode.isdelete == false(),
+                                               IdentifyingCode.ICtelphone == tel
+                                               ).order_by(IdentifyingCode.createtime.desc()).first()
+
+        # 获取当前时间，与上一次获取的时间进行比较，小于60秒的获取进行提醒
+        if time_up:
+            delta = time_now - time_up.createtime
+            current_app.logger.info("this is time up {}".format(delta))
+            if delta.seconds < 60:
+                raise StatusError("验证码已发送, 请稍后再试")
+        with db.auto_commit():
+            new_code = IdentifyingCode.create({
+                "ICtelphone": tel,
+                "ICcode": code,
+                "ICid": str(uuid.uuid1())
+            })
+            db.session.add(new_code)
+
+            try:
+                response_send_message = SendSMS(tel, {"code": code})
+                if not response_send_message:
+                    raise NotImplementedError
+            except Exception as e:
+                current_app.logger.error('send identifying code error : {}'.format(e))
+                raise StatusError('验证码获取失败')
+
+        response = {'telphone': tel}
+        return Success('获取验证码成功', data=response)
