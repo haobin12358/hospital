@@ -2,6 +2,8 @@
 import os
 from datetime import datetime
 from flask import request, current_app
+
+from hospital.extensions.aliyunoss.storage import AliyunOss
 from ..common.compress_picture import CompressPicture
 from ..extensions.error_response import NotFound, ParamsError, SystemError, TokenError
 from ..common.video_thumbnail import video2frames
@@ -11,6 +13,8 @@ from ..extensions.success_response import Success
 
 
 class CFile(object):
+    def __init__(self):
+        self.oss = AliyunOss(current_app)
 
     @token_required
     def upload_img(self):
@@ -85,20 +89,18 @@ class CFile(object):
                 second_str = '0' + str(second) if second < 10 else str(second)
                 video_dur = minute_str + ':' + second_str
 
-                # if API_HOST in self.upload_to_qiniu:
-                #     try:
-                #         self.qiniu.save(data=newFile, filename=data[1:])
-                #     except Exception as e:
-                #         current_app.logger.error(">>>  视频上传到七牛云出错 : {}  <<<".format(e))
-                #         raise ParamsError('上传视频失败，请稍后再试')
+                try:
+                    self.oss.save(data=newFile, filename=data[1:])
+                except Exception as e:
+                    current_app.logger.error(">>>  视频上传到阿里云出错 : {}  <<<".format(e))
+                    raise ParamsError('上传视频失败，请稍后再试')
 
-                # video_thumbnail_path = os.path.join(newPath, thum_name.get('thumbnail_name_list')[0])
+                video_thumbnail_path = os.path.join(newPath, thum_name.get('thumbnail_name_list')[0])
 
-                # if API_HOST in self.upload_to_qiniu:
-                #     try:
-                #         self.qiniu.save(data=video_thumbnail_path, filename=video_thum[1:])
-                #     except Exception as e:
-                #         current_app.logger.error(">>>  视频预览图上传到七牛云出错 : {}  <<<".format(e))
+                try:
+                    self.oss.save(data=video_thumbnail_path, filename=video_thum[1:])
+                except Exception as e:
+                    current_app.logger.error(">>>  视频预览图上传到阿里云出错 : {}  <<<".format(e))
             else:
                 upload_type = 'image'
                 video_thum = ''
@@ -113,13 +115,12 @@ class CFile(object):
                 data += '_' + thumbnail_img.split('_')[-1]
 
                 # 上传到七牛云，并删除本地压缩图
-                # if API_HOST in self.upload_to_qiniu:
-                #     try:
-                #         self.qiniu.save(data=thumbnail_img, filename=data[1:])
-                #         os.remove(str(newFile + '_' + thumbnail_img.split('_')[-1]))
-                #     except Exception as e:
-                #         current_app.logger.error(">>>  图片上传到七牛云出错 : {}  <<<".format(e))
-                #         raise ParamsError('上传图片失败，请稍后再试')
+                try:
+                    self.oss.save(data=thumbnail_img, filename=data[1:])
+                    os.remove(str(newFile + '_' + thumbnail_img.split('_')[-1]))
+                except Exception as e:
+                    current_app.logger.error(">>>  图片上传到阿里云出错 : {}  <<<".format(e))
+                    raise ParamsError('上传图片失败，请稍后再试')
             current_app.logger.info(">>>  Upload File Path is  {}  <<<".format(data))
             return data, video_thum, video_dur, upload_type
         else:
@@ -178,11 +179,3 @@ class CFile(object):
             usid = 'anonymous'
         res = ''.join(random.choice(myStr) for _ in range(20)) + usid + shuffix
         return res
-
-    @staticmethod
-    def get_img_size(file):
-        try:
-            img = Image.open(file)
-            return '_' + 'x'.join(map(str, img.size))
-        except Exception as e:
-            return ''
