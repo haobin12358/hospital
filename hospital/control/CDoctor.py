@@ -228,8 +228,8 @@ class CDoctor(object):
         db.session.add_all(dm_list)
 
         # 删除多余
-        DoctorMedia.query.filter(DoctorMedia.DMid.notin_(dmid_list), DoctorMedia.isdelete == 0).delete_(
-            synchronize_session=False)
+        DoctorMedia.query.filter(DoctorMedia.DMid.notin_(dmid_list), DoctorMedia.DOid == doctor.DOid,
+                                 DoctorMedia.isdelete == 0).delete_(synchronize_session=False)
 
     def _add_or_update_media_pic(self, doctor, media_pic, dmtype=DoctorMetiaType.mainpic.value):
         if not isinstance(media_pic, str):
