@@ -90,11 +90,15 @@ class CRegister(CUser):
     def _fill_resgister(self, register):
         restatus = register.REstatus
         register.fill('restatus_zh', RegisterStatus(restatus).zh_value)
+        register.add('createtime')
         family = Family.query.filter(Family.FAid == register.FAid, Family.isdelete == 0).first()
         if family:
             register.fill('FAname', family.FAname)
             register.fill('FAtel', family.FAtel)
             register.fill('FAaddress', self._combine_address_by_area_id(family.AAid))
+        dep = Departments.query.filter(Departments.DEid == register.DEid, Departments.isdelete == 0).first()
+        if dep:
+            register.fill('DEname', dep.DEname)
 
     @token_required
     def list_calling(self):
@@ -102,11 +106,11 @@ class CRegister(CUser):
         # todo 对接his
         data = {"callinglist": [
             {
-                "departmentname": "小儿发育科",  # 科室名
+                "departmentname": "儿科",  # 科室名
                 "currentnum": "78"  # 当前号
             },
             {
-                "departmentname": "小儿内科",  # 科室名
+                "departmentname": "X放射科",  # 科室名
                 "currentnum": "76"  # 当前号
             },
         ],
@@ -121,12 +125,11 @@ class CRegister(CUser):
             dep.fill('currentnum', calling.get('currentnum'))
             callinglist.append(dep)
         today = date.today()
-        registerlist = Register.query.filter(Register.USid == usid, Register.isdelete == 0, Register.REdate ==today).all()
-
+        registerlist = Register.query.filter(Register.USid == usid, Register.isdelete == 0,
+                                             Register.REdate == today).all()
+        for register in registerlist:
+            self._fill_resgister(register)
         return Success('获取叫号列表成功', data={
             'callinglist': callinglist,
             'registerlist': registerlist
         })
-
-
-
