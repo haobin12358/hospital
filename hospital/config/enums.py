@@ -52,8 +52,8 @@ class RegisterStatus(Enum):
     queuing = 0, '排队中'
     pending = 1, '待就诊'
     transfer = 2, '被调剂'
-    commentimg = 3, '待评价'
-    complete = 4, '已完成'
+    commenting = 3, '待评价'
+    complete = 4, '已评价'
     cancle = -1, '未就诊'
 
 
