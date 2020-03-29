@@ -10,12 +10,12 @@ from sqlalchemy import or_, and_
 from hospital.config.enums import RegisterStatus
 from hospital.config.timeformat import format_forweb_no_HMS
 from .CUser import CUser
-from hospital.extensions.interface.user_interface import token_required, is_user
+from hospital.extensions.interface.user_interface import token_required
 from hospital.extensions.success_response import Success
 from hospital.extensions.error_response import ParamsError, NotFound
 from hospital.extensions.params_validates import parameter_required
 from hospital.extensions.register_ext import db
-from hospital.models import Series, Doctor, Register, User, Family, Departments
+from hospital.models import Register, Family, Departments
 
 
 class CRegister(CUser):
@@ -67,13 +67,14 @@ class CRegister(CUser):
         except:
             reamorpm = 0
         # 就诊人信息校验
-        Family.query.filter(
+        family = Family.query.filter(
             Family.USid == usid, Family.FAid == faid, Family.isdelete == 0).first_('就诊人信息已删除')
         # 科室信息校验
-        Departments.query.filter(Departments.isdelete == 0, Departments.DEid == deid).first_('科室不存在')
+        dep = Departments.query.filter(Departments.isdelete == 0, Departments.DEid == deid).first_('科室不存在')
 
-        with db.auto_commit:
-            Register.create({
+        with db.auto_commit():
+            register = Register.create({
+                'REid': str(uuid.uuid1()),
                 'DEid': deid,
                 'USid': usid,
                 'FAid': faid,
@@ -81,16 +82,51 @@ class CRegister(CUser):
                 'REamOrPm': reamorpm,
                 'REremarks': reremarks
             })
-        return Success('预约成功，排队中')
+            current_app.logger.info('创建挂号 科室 {} 就诊人 {}'.format(dep.DEname, family.FAname))
+            # todo 对接his
+            db.session.add(register)
+        return Success('预约成功{}，排队中'.format(dep.DEname))
 
     def _fill_resgister(self, register):
         restatus = register.REstatus
         register.fill('restatus_zh', RegisterStatus(restatus).zh_value)
-        family = Family.query.filter(Family.FAid == register.FAid, Family.isdelete ==0).first()
+        family = Family.query.filter(Family.FAid == register.FAid, Family.isdelete == 0).first()
         if family:
             register.fill('FAname', family.FAname)
             register.fill('FAtel', family.FAtel)
             register.fill('FAaddress', self._combine_address_by_area_id(family.AAid))
+
+    @token_required
+    def list_calling(self):
+        usid = getattr(request, 'user').id
+        # todo 对接his
+        data = {"callinglist": [
+            {
+                "departmentname": "小儿发育科",  # 科室名
+                "currentnum": "78"  # 当前号
+            },
+            {
+                "departmentname": "小儿内科",  # 科室名
+                "currentnum": "76"  # 当前号
+            },
+        ],
+            "total": 3  # 共多少条记录
+        }
+        callinglist = []
+        for calling in data.get('callinglist'):
+            dep = Departments.query.filter(
+                Departments.DEname == calling.get('departmentname'), Departments.isdelete == 0).first()
+            if not dep:
+                continue
+            dep.fill('currentnum', calling.get('currentnum'))
+            callinglist.append(dep)
+        today = date.today()
+        registerlist = Register.query.filter(Register.USid == usid, Register.isdelete == 0, Register.REdate ==today).all()
+
+        return Success('获取叫号列表成功', data={
+            'callinglist': callinglist,
+            'registerlist': registerlist
+        })
 
 
 
