@@ -63,5 +63,16 @@ class SubscribeStatus(Enum):
     had_review = 203, '已评价'
 
 
+class ApplyStatus(Enum):
+    reject = -10, '未通过'
+    waiting = 0, '审核中'
+    passed = 10, '已通过'
+
+
+class AssistancePictureType(Enum):
+    diagnosis = 1, '诊断证明'
+    poverty = 2, '特困证明'
+
+
 if __name__ == '__main__':
     print(CourseStatus(101).zh_value)
