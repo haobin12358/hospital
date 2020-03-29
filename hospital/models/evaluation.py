@@ -65,6 +65,7 @@ class AnswerItem(Base):
     """
     __tablename__ = "AnswerItem"
     AIid = Column(String(64), primary_key=True)
+    EIname = Column(String(128), comment="题目内容", nullable=False)
     EAindex = Column(String(8), comment="选项标号", nullable=False)
     EAname = Column(Text, comment="选项内容", nullable=False)
     EApoint = Column(Float, comment="选项分值", nullable=False)
