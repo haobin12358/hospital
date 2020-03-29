@@ -138,3 +138,13 @@ class CourseStatusError(BaseError):
     status = 405
     status_code = 405303
     message = '课程状态异常'
+
+class PointError(BaseError):
+    status = 405
+    status_code = 405304
+    message = '存在重叠分数区间'
+
+class EvaluationNumError(BaseError):
+    status = 405
+    status_code = 405305
+    message = "有未完成题目"
