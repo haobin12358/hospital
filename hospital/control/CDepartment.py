@@ -34,7 +34,11 @@ class CDepartment(object):
                 DoctorMedia.DOid == do.DOid,
                 DoctorMedia.DMtype == DoctorMetiaType.mainpic.value,
                 DoctorMedia.isdelete == 0).first()
-            do.fill('doctormainpic', dmmain.DMmedia)
+            if dmmain:
+                do.fill('doctormainpic', dmmain.DMmedia)
+            else:
+                do.fill('doctormainpic', '')
+        dep.fill('doctors', dos)
 
     def _add_or_update_symptom(self, dep, symptoms):
         if not isinstance(symptoms, list):
