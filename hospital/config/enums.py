@@ -57,5 +57,11 @@ class RegisterStatus(Enum):
     cancle = -1, '未就诊'
 
 
+class SubscribeStatus(Enum):
+    had_subscribe = 201, '已预约'
+    had_classof = 202, '已上课'
+    had_review = 203, '已评价'
+
+
 if __name__ == '__main__':
     print(CourseStatus(101).zh_value)

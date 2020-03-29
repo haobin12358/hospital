@@ -18,7 +18,7 @@ from hospital.config.enums import FamilyRole, FamilyType, Gender
 from hospital.config.secret import MiniProgramAppId, MiniProgramAppSecret
 from hospital.extensions.error_response import WXLoginError, ParamsError, NotFound, DumpliError, StatusError
 from hospital.extensions.interface.user_interface import token_required
-from hospital.extensions.params_validates import parameter_required
+from hospital.extensions.params_validates import parameter_required, validate_chinese
 from hospital.extensions.register_ext import db
 from hospital.extensions.success_response import Success
 from hospital.extensions.token_handler import usid_to_token
@@ -347,7 +347,7 @@ class CUser(object):
         if str(farole) == str(FamilyRole.child.value):
             del required_dict['fatel']
         parameter_required(required_dict, datafrom=data)
-        if not self._verid_chinese(str(faname)):
+        if not validate_chinese(str(faname)):
             raise ParamsError('姓名中包含非汉语字符, 请检查姓名是否填写错误')
         if fatel and not re.match(r'^1[1-9][0-9]{9}$', str(fatel)):
             raise ParamsError('请填写正确的手机号码')
@@ -429,16 +429,6 @@ class CUser(object):
         else:
             age = today_d.year - birth_d.year - 1
         return age
-
-    @staticmethod
-    def _verid_chinese(name):
-        """
-        校验是否是纯汉字
-        :param name:
-        :return: 汉字, 如果有其他字符返回 []
-        """
-        RE_CHINESE = re.compile(r'^[\u4e00-\u9fa5]{1,8}$')
-        return RE_CHINESE.findall(name)
 
     @token_required
     def send_identifying_code(self):
