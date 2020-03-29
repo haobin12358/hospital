@@ -9,7 +9,8 @@ class ARegister(Resource):
 
     def get(self, register):
         apis = {
-            'list': self.cregister.list
+            'list': self.cregister.list,
+            'list_calling': self.cregister.list_calling
         }
         return apis
 
