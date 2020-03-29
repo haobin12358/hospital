@@ -3,7 +3,7 @@ from ..control.CAssistance import CAssistance
 from ..extensions.base_resource import Resource
 
 
-class AUser(Resource):
+class AAssistance(Resource):
     def __init__(self):
         self.cassistance = CAssistance()
 
