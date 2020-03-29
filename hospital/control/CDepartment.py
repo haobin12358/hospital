@@ -16,19 +16,20 @@ class CDepartment(object):
     def __init__(self):
         pass
 
-    def _fill_dep_details(self, dep, index='home'):
+    def _fill_dep_details(self, dep, index=None):
         dep.fields = '__all__'
         symptoms = Symptom.query.filter(Symptom.DEid == dep.DEid, Symptom.isdelete == 0).order_by(
             Symptom.SYsort.asc(), Symptom.createtime.asc()).all()
         # 症状填充
         dep.fill('symptoms', symptoms)
-        if index and str(index) == 'back':
+        if index:
             return
         # 医生列表填充
         dos = Doctor.query.filter(Doctor.DEid == dep.DEid, Doctor.isdelete == 0).order_by(
             Doctor.DOsort.asc(), Doctor.createtime.desc()).all()
         for do in dos:
             do.add('DOskilledIn')
+            do.fill('dename', dep.DEname)
             # 医生主图
             dmmain = DoctorMedia.query.filter(
                 DoctorMedia.DOid == do.DOid,
@@ -79,12 +80,12 @@ class CDepartment(object):
         deps = Departments.query.filter(Departments.isdelete == 0).order_by(
             Departments.DEsort.asc(), Departments.createtime.desc()).all_with_page()
         for dep in deps:
+            self._fill_dep_details(dep, index)
             if index == 'home':
                 dep.add('DEicon')
+
             if index == 'appointment':
                 dep.add('DEicon2')
-            if index == 'back':
-                self._fill_dep_details(dep, index)
 
         return Success(data=deps)
 

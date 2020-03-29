@@ -14,6 +14,7 @@ from .api.AClasses import AClasses
 from .api.AUser import AUser
 from .api.AVideo import AVideo
 from .api.AExample import AExample
+from .api.ARegister import ARegister
 from .api.AEvaluation import AEvaluation
 from .extensions.request_handler import error_handler, request_first_handler
 from .config.secret import DefaltSettig
@@ -34,6 +35,7 @@ def register(app):
     bp.add_url_rule('/file/<string:file>', view_func=AFile.as_view('file'))
     bp.add_url_rule('/example/<string:example>', view_func=AExample.as_view('example'))
     bp.add_url_rule('/video/<string:video>', view_func=AVideo.as_view('video'))
+    bp.add_url_rule('/register/<string:register>', view_func=ARegister.as_view('register'))
     bp.add_url_rule('/evaluation/<string:evaluation>', view_func=AEvaluation.as_view('evaluation'))
     bp.add_url_rule('/assistance/<string:assistance>', view_func=AAssistance.as_view('assistance'))
     app.register_blueprint(bp)
