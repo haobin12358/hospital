@@ -16,7 +16,7 @@ from hospital.extensions.error_response import ParamsError, AuthorityError, User
 from hospital.models.departments import Doctor, Departments
 from hospital.models.classes import Classes, Course, Subscribe, Setmeal
 from hospital.models.user import User
-from hospital.config.enums import CourseStatus
+from hospital.config.enums import CourseStatus, SubscribeStatus
 
 
 class CClasses:
@@ -292,6 +292,7 @@ class CClasses:
             "COid": data.get("coid"),
             "CLname": course["CLname"],
             "COstarttime": course["COstarttime"],
+            "DOid": course["DOid"],
             "DOname": course["DOname"],
             "USname": user["USname"],
             "USid": user_id,
@@ -358,3 +359,77 @@ class CClasses:
             })
             setmeal.sort(key=lambda x: x["SMnum"])
             return Success(message="获取课时套餐成功", data=setmeal)
+
+    def get_subscribe_list(self):
+        """
+        分页获取预约列表
+        """
+        filter_args = [Subscribe.isdelete == 0]
+        args = parameter_required(('token', ))
+        token = args.get('token')
+        user = token_to_user_(token)
+        if user.model == "User":
+            filter_args.append(Subscribe.USid == user.id)
+        elif user.model == "Doctor":
+            filter_args.append(Subscribe.DOid == user.id)
+        else:
+            pass
+        if args.get('sustatus'):
+            filter_args.append(Subscribe.SUstatus == int(args.get('sustatus')))
+        if args.get('usname'):
+            filter_args.append(Subscribe.USname.like("%{0}%".format(args.get('usname'))))
+        if args.get('clname'):
+            filter_args.append(Subscribe.CLname.like("%{0}%".format(args.get('clname'))))
+        if args.get('doname'):
+            filter_args.append(Subscribe.DOname.like("%{0}%".format(args.get('doname'))))
+        if args.get('codate'):
+
+            filter_args.append(Subscribe.COstarttime.date() ==
+                               datetime.datetime.strptime(args.get('codate'), "%Y-%m-%d").date())
+        subcribe_list = Subscribe.query.filter(*filter_args).order_by(Subscribe.createtime).all_with_page()
+        print(subcribe_list)
+        for subcribe in subcribe_list:
+            subcribe.fill("sustatus_zh", SubscribeStatus(int(subcribe["SUstatus"])).zh_value)
+            coid = subcribe["COid"]
+            course = Course.query.filter(Course.COid == coid, Course.isdelete == 0).first_("未找到课程排班信息")
+            clid = course["CLid"]
+            classes = Classes.query.filter(Classes.CLid == clid, Classes.isdelete == 0).first_("未找到课程信息")
+            subcribe.fill("dename", classes["DEname"])
+            subcribe.fill("createtime", subcribe["createtime"])
+            subcribe.fill("coendtime", course["COendtime"])
+            if subcribe["COstarttime"].hour < 12:
+                subcribe.fill("date", "{0}.{1}.{2}".format(
+                    subcribe["COstarttime"].year, subcribe["COstarttime"].month, subcribe["COstarttime"].day))
+                subcribe.fill("time", "{0} {1}:{2}-{3}:{4}".format(
+                    "上午", subcribe["COstarttime"].hour, subcribe["COstarttime"].minute, subcribe["coendtime"].hour,
+                    subcribe["coendtime"].minute))
+            else:
+                subcribe.fill("date", "{0}.{1}.{2}".format(
+                    subcribe["COstarttime"].year, subcribe["COstarttime"].month, subcribe["COstarttime"].day))
+                subcribe.fill("time", "{0} {1}:{2}-{3}:{4}".format(
+                    "下午", subcribe["COstarttime"].hour - 12, subcribe["COstarttime"].minute,
+                    subcribe["coendtime"].hour - 12, subcribe["coendtime"].minute))
+
+        return Success(message="获取预约列表成功", data=subcribe_list)
+
+    def update_sustatus(self):
+        """
+        批量确认已上课
+        """
+        token = request.args.get('token')
+        user = token_to_user_(token)
+        if user.model != 'Doctor':
+            return AuthorityError("无权限")
+
+        with db.auto_commit():
+            for subcribe in request.json:
+                subcribe_id = subcribe["suid"]
+                su_dict = {
+                    "SUstatus": 202
+                }
+                su_instance = Subscribe.query.filter(Subscribe.SUid == subcribe_id).first_('未找到该课程预约信息')
+                if su_instance["DOid"] != user.id:
+                    return AuthorityError("无权限")
+                su_instance.update(su_dict, null='not')
+                db.session.add(su_instance)
+        return Success(message='确认成功')

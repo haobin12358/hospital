@@ -48,6 +48,7 @@ class Subscribe(Base):
     COid = Column(String(64), comment="排班id")
     CLname = Column(String(128), comment="课程名称")
     COstarttime = Column(DateTime, comment="课程开始时间，即预约课程时间")
+    DOid = Column(String(64), comment="医生id")
     DOname = Column(String(255), comment="医生名称")
     USname = Column(String(255), comment="用户名")
     USid = Column(String(64), comment="用户id")
