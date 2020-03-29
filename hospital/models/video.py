@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from sqlalchemy import Integer, String, Text
 from hospital.extensions.base_model import Base, Column
 
