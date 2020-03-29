@@ -5,3 +5,4 @@ from .user import *
 from .classes import *
 from .video import *
 from .evaluation import *
+from .assistance import *
