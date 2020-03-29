@@ -67,3 +67,13 @@ def validate_price(price, can_zero=True):
     if not can_zero and float(price) <= 0:
         raise ParamsError("数字'{}'错误， 只能输入大于0的数字，最多可保留两位小数".format(price))
     return Decimal(price).quantize(Decimal('0.00'))
+
+
+def validate_chinese(name):
+    """
+    校验是否是纯汉字
+    :param name:
+    :return: 汉字, 如果有其他字符返回 []
+    """
+    re_chinese = re.compile(r'^[\u4e00-\u9fa5]{1,8}$')
+    return re_chinese.findall(name)
