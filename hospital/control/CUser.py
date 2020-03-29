@@ -473,3 +473,21 @@ class CUser(object):
 
         response = {'telphone': tel}
         return Success('获取验证码成功', data=response)
+
+    @staticmethod
+    def validate_identifying_code(telephone, identifying_code):
+        """验证码校验"""
+        if not telephone or not identifying_code:
+            raise ParamsError("手机号/验证码缺失")
+        res_code = IdentifyingCode.query.filter(IdentifyingCode.ICtelphone == telephone,
+                                                IdentifyingCode.isdelete == false()
+                                                ).order_by(IdentifyingCode.createtime.desc()).first()
+
+        if not res_code or str(res_code.ICcode) != identifying_code:
+            current_app.logger.info('get identifying code:{}; res code: {}'.format(identifying_code, res_code.ICcode))
+            raise ParamsError('验证码有误')
+
+        time_now = datetime.now()
+        if (time_now - res_code.createtime).seconds > 600:
+            current_app.logger.info('time now = {}, send time = {}'.format(time_now, res_code.createtime))
+            raise ParamsError('验证码已经过期')
