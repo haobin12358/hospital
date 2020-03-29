@@ -29,4 +29,5 @@ class Register(Base):
 
     @orm.reconstructor
     def __init__(self):
+        super(Register, self).__init__()
         self.hide('REamOrPm', 'REremarks', 'REdate')
