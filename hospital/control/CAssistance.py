@@ -51,8 +51,11 @@ class CAssistance(object):
     @token_required
     def relatives(self):
         """亲属详情"""
+        args = parameter_required('arid')
+        arid = args.get('arid')
         usid = getattr(request, 'user').id
-        relative = self._exist_assistance_relative([AssistanceRelatives.USid == usid, ], '未找到任何信息')
+        relative = self._exist_assistance_relative([AssistanceRelatives.USid == usid,
+                                                    AssistanceRelatives.ARid == arid], '未找到任何信息')
         relative.fill('artype_zh', FamilyType(relative.ARtype).zh_value)
         return Success(data=relative)
 

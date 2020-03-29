@@ -3,7 +3,7 @@ from flask import Flask
 from flask import Blueprint
 from flask_cors import CORS
 
-from .api import AAssistance
+from .api.AAssistance import AAssistance
 from .api.AFile import AFile
 from .api.AHello import AHello
 from .api.AConfig import AConfig

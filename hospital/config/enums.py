@@ -47,11 +47,11 @@ class FamilyType(Enum):
     son = 3, '儿子'
     daughter = 4, '女儿'
 
+
 class SubscribeStatus(Enum):
     had_subscribe = 201, '已预约'
     had_classof = 202, '已上课'
     had_review = 203, '已评价'
-
 
 
 if __name__ == '__main__':
