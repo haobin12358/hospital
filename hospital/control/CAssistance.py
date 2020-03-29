@@ -25,18 +25,18 @@ class CAssistance(object):
         data = parameter_required({'atname': '姓名', 'atbirthday': '出生年月', 'atgender': '性别',
                                    'athousehold': '户籍地址', 'ataddress': '家庭地址', 'attelphone': '手机号码',
                                    'idf_code': '验证码', 'arids': '申请人亲属', 'atcondition': '身体状况',
-                                   'attreatment': '治疗情况', 'athospital': '治疗医院', 'atdetail': '申请援助项目',
+                                   'attreatment': '治疗情况', 'atdetail': '申请援助项目',
                                    'diagnosis': '诊断证明图片', 'poverty': '特困证明图片', 'atdate': '到院日期'})
-        atname, atgender, atbirthday, attelphone, arids, ardate, diagnosis, poverty = map(lambda x: data.get(x), (
-            'atname', 'atgender', 'atbirthday', 'attelphone', 'arids', 'ardate', 'diagnosis', 'poverty'))
+        atname, atgender, atbirthday, attelphone, arids, atdate, diagnosis, poverty = map(lambda x: data.get(x), (
+            'atname', 'atgender', 'atbirthday', 'attelphone', 'arids', 'atdate', 'diagnosis', 'poverty'))
         if not validate_chinese(atname):
             raise ParamsError('姓名中包含非汉语字符, 请检查姓名是否填写错误')
         validate_arg(r'^[1-2]$', atgender, '参数错误: atgender')
         validate_arg(r'^1[1-9][0-9]{9}$', attelphone, '请输入正确的手机号码')
-        map(lambda x: self._exist_assistance_relative([AssistanceRelatives.ARid == x], 'arid不存在'), arids)
+        [self._exist_assistance_relative([AssistanceRelatives.ARid == arid], 'arid不存在') for arid in arids]
         if not validate_datetime(atbirthday):
             raise ParamsError('参数错误: atbirthday')
-        if not validate_datetime(ardate):
+        if not validate_datetime(atdate):
             raise ParamsError('参数错误: ardate')
         CUser().validate_identifying_code(attelphone, data.get('idf_code'))
         assistance_dict = {'ATid': str(uuid.uuid1()), 'USid': getattr(request, 'user').id,
@@ -45,7 +45,7 @@ class CAssistance(object):
                            'ATtelphone': attelphone, 'ARids': json.dumps(arids),
                            'ATcondition': data.get('atcondition'), 'ATtreatment': data.get('attreatment'),
                            'AThospital': data.get('athospital'), 'ATdetail': data.get('atdetail'),
-                           'ATdate': ardate, 'ATincomeProof': data.get('atincomeproof'),
+                           'ATdate': atdate, 'ATincomeProof': data.get('atincomeproof'),
                            'ATstatus': ApplyStatus.waiting.value
                            }
         instance_list = []
@@ -62,7 +62,7 @@ class CAssistance(object):
                                                             'APimg': img_url})) for img_url in poverty]
 
             db.session.add_all(instance_list)
-        return Success('提交成功')
+        return Success('提交成功', data={'ATid': assistance_dict['ATid']})
 
     @token_required
     def get_assistance(self):

@@ -484,7 +484,8 @@ class CUser(object):
                                                 ).order_by(IdentifyingCode.createtime.desc()).first()
 
         if not res_code or str(res_code.ICcode) != identifying_code:
-            current_app.logger.info('get identifying code:{}; res code: {}'.format(identifying_code, res_code.ICcode))
+            current_app.logger.info(
+                'get identifying code:{}; res code:{}'.format(identifying_code, res_code.ICcode if res_code else None))
             raise ParamsError('验证码有误')
 
         time_now = datetime.now()
