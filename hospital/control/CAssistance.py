@@ -4,22 +4,89 @@ create user: wiilz
 last update time:2020/3/26 18:17
 """
 import uuid
+import json
 from sqlalchemy import false
 from flask import current_app, request
-from hospital.config.enums import FamilyType
+from hospital.config.enums import FamilyType, ApplyStatus, AssistancePictureType
 from hospital.control.CUser import CUser
 from hospital.extensions.error_response import ParamsError, DumpliError
-from hospital.extensions.interface.user_interface import token_required
-from hospital.extensions.params_validates import parameter_required, validate_chinese, validate_arg
+from hospital.extensions.interface.user_interface import token_required, is_user
+from hospital.extensions.params_validates import parameter_required, validate_chinese, validate_arg, validate_datetime
 from hospital.extensions.register_ext import db
 from hospital.extensions.success_response import Success
-from hospital.models import AssistanceRelatives
+from hospital.models import AssistanceRelatives, Assistance, AssistancePicture
 
 
 class CAssistance(object):
 
+    @token_required
     def apply(self):
         """申请"""
+        data = parameter_required({'atname': '姓名', 'atbirthday': '出生年月', 'atgender': '性别',
+                                   'athousehold': '户籍地址', 'ataddress': '家庭地址', 'attelphone': '手机号码',
+                                   'idf_code': '验证码', 'arids': '申请人亲属', 'atcondition': '身体状况',
+                                   'attreatment': '治疗情况', 'atdetail': '申请援助项目',
+                                   'diagnosis': '诊断证明图片', 'poverty': '特困证明图片', 'atdate': '到院日期'})
+        atname, atgender, atbirthday, attelphone, arids, atdate, diagnosis, poverty = map(lambda x: data.get(x), (
+            'atname', 'atgender', 'atbirthday', 'attelphone', 'arids', 'atdate', 'diagnosis', 'poverty'))
+        if not validate_chinese(atname):
+            raise ParamsError('姓名中包含非汉语字符, 请检查姓名是否填写错误')
+        validate_arg(r'^[1-2]$', atgender, '参数错误: atgender')
+        validate_arg(r'^1[1-9][0-9]{9}$', attelphone, '请输入正确的手机号码')
+        [self._exist_assistance_relative([AssistanceRelatives.ARid == arid], 'arid不存在') for arid in arids]
+        if not validate_datetime(atbirthday):
+            raise ParamsError('参数错误: atbirthday')
+        if not validate_datetime(atdate):
+            raise ParamsError('参数错误: ardate')
+        CUser().validate_identifying_code(attelphone, data.get('idf_code'))
+        assistance_dict = {'ATid': str(uuid.uuid1()), 'USid': getattr(request, 'user').id,
+                           'ATname': atname, 'ATbirthday': atbirthday, 'ATgender': atgender,
+                           'AThousehold': data.get('athousehold'), 'ATaddress': data.get('ataddress'),
+                           'ATtelphone': attelphone, 'ARids': json.dumps(arids),
+                           'ATcondition': data.get('atcondition'), 'ATtreatment': data.get('attreatment'),
+                           'AThospital': data.get('athospital'), 'ATdetail': data.get('atdetail'),
+                           'ATdate': atdate, 'ATincomeProof': data.get('atincomeproof'),
+                           'ATstatus': ApplyStatus.waiting.value
+                           }
+        instance_list = []
+        with db.auto_commit():
+            assistance = Assistance.create(assistance_dict)
+            instance_list.append(assistance)
+            [instance_list.append(AssistancePicture.create({'APid': str(uuid.uuid1()),
+                                                            'ATid': assistance_dict['ATid'],
+                                                            'APtype': AssistancePictureType.diagnosis.value,
+                                                            'APimg': img_url})) for img_url in diagnosis]
+            [instance_list.append(AssistancePicture.create({'APid': str(uuid.uuid1()),
+                                                            'ATid': assistance_dict['ATid'],
+                                                            'APtype': AssistancePictureType.poverty.value,
+                                                            'APimg': img_url})) for img_url in poverty]
+
+            db.session.add_all(instance_list)
+        return Success('提交成功', data={'ATid': assistance_dict['ATid']})
+
+    @token_required
+    def get_assistance(self):
+        if is_user:
+            usid = getattr(request, 'user').id
+            assistance = Assistance.query.filter(Assistance.isdelete == false(), Assistance.USid == usid
+                                                 ).order_by(Assistance.createtime.desc()).first()
+            res = {}
+            if assistance:
+                current_app.logger.info(f'get assistance id: {assistance.ATid}')
+                res['atstatus'] = assistance.ATstatus
+                res['atstatus_zh'] = ApplyStatus(assistance.ATstatus).zh_value
+                res['can_submit'] = False if assistance.ATstatus == ApplyStatus.waiting.value else True
+            return Success(data=res)
+        else:  # todo 管理员查看
+            pass
+
+    @token_required
+    def list_assistance(self):
+        """管理员获取申请列表"""
+        pass
+
+    def approve(self):
+        """管理员审批"""
         pass
 
     @token_required

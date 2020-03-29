@@ -12,6 +12,7 @@ class AAssistance(Resource):
             'list_relatives': self.cassistance.list_relatives,
             'relatives': self.cassistance.relatives,
             'relatives_type': self.cassistance.relatives_type,
+            'get': self.cassistance.get_assistance,
 
         }
         return apis
@@ -19,6 +20,7 @@ class AAssistance(Resource):
     def post(self, assistance):
         apis = {
             'set_relatives': self.cassistance.set_relatives,
+            'apply': self.cassistance.apply,
         }
 
         return apis

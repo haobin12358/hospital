@@ -77,3 +77,18 @@ def validate_chinese(name):
     """
     re_chinese = re.compile(r'^[\u4e00-\u9fa5]{1,8}$')
     return re_chinese.findall(name)
+
+
+def validate_datetime(date):
+    """判断是否是一个有效的日期字符串"""
+    import time
+    date = str(date)
+    try:
+        if ":" in date:
+            time.strptime(date, "%Y-%m-%d %H:%M:%S")
+        else:
+            time.strptime(date, "%Y-%m-%d")
+        return True
+    except Exception as e:
+        print(e)
+        return False

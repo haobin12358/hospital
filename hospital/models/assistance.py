@@ -25,7 +25,8 @@ class Assistance(Base):
     AThospital = Column(String(100), comment='治疗医院')
     ATdetail = Column(Text, comment='申请项目细节')
     ATdate = Column(Date, comment='到院日期')
-    ATstatus = Column(Integer, default=0, comment='审核状态，{-1: 未通过， 0: 待审核, 1: 已通过}')
+    ATincomeProof = Column(Text, comment='收入证明')
+    ATstatus = Column(Integer, default=0, comment='审核状态，{-10: 未通过， 0: 待审核, 10: 已通过}')
     Reviewer = Column(String(64), comment='审核人id')
     RejectReason = Column(String(255), comment='拒绝原因')
 
