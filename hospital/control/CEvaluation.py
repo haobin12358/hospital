@@ -5,6 +5,7 @@ last update time:2020/3/13 03:53
 """
 import uuid, re
 from flask import request, current_app
+from decimal import Decimal
 from hospital.extensions.token_handler import usid_to_token
 from hospital.extensions.interface.user_interface import admin_required, is_hign_level_admin, is_admin
 from hospital.extensions.register_ext import db
@@ -81,7 +82,7 @@ class CEvaluation:
             "EIid": data.get('eiid'),
             "EAname": data.get('eaname'),
             "EAindex": data.get('eaindex'),
-            "EApoint": "%.2f" % float(data.get('eapoint'))
+            "EApoint": Decimal(str(data.get('eapoint') or 0))
         }
         eaid = data.get("eaid")
         with db.auto_commit():
@@ -106,8 +107,8 @@ class CEvaluation:
         data = parameter_required(('evid', 'epstart', 'epend', 'epanswer'))
         if not (is_hign_level_admin() or is_admin()):
             return AuthorityError()
-        epstart = "%.2f" % float(data.get('epstart'))
-        epend = "%.2f" % float(data.get('epend'))
+        epstart = Decimal(str(data.get('epstart') or 0))
+        epend = Decimal(str(data.get('epend') or 0))
         ep_dict = {
             "EVid": data.get('evid'),
             "EPstart": epstart,
@@ -119,7 +120,7 @@ class CEvaluation:
         ep_list = EvaluationPoint.query.filter(EvaluationPoint.EVid == data.get('evid')).all()
         print(ep_list)
         for ep in ep_list:
-            if not(epstart > "%.2f" % float(ep["EPend"]) or epend < "%.2f" % float(ep["EPstart"])):
+            if not(epstart > Decimal(str(ep["EPend"] or 0)) or epend < Decimal(str(ep["EPstart"]) or 0)):
                 return PointError()
         epid = data.get("epid")
         with db.auto_commit():
@@ -177,7 +178,7 @@ class CEvaluation:
         evid = data.get('evid')
         anid = str(uuid.uuid1())
         with db.auto_commit():
-            point = 0.0
+            point = Decimal(0.0)
             evaluationitem_all = EvaluationItem.query.filter(EvaluationItem.isdelete == 0).all()
             if len(evaluationitem_all) != len(data.get('ei_list')):
                 return EvaluationNumError()
@@ -200,7 +201,7 @@ class CEvaluation:
                     "USid": usid,
                     "ANid": anid
                 }
-                point = "%.2f" % float(evaluationanswer["EApoint"]) + "%.2f" % float(point)
+                point = Decimal(str(evaluationanswer["EApoint"] or 0)) + Decimal(str(point or 0))
                 ai_instance = AnswerItem.create(ai_dict)
                 db.session.add(ai_instance)
             evaluation = Evaluation.query.filter(Evaluation.isdelete == 0, Evaluation.EVid == evid).first_("未找到该评测")

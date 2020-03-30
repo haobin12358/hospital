@@ -185,11 +185,11 @@ class CAdmin:
                     "isdelete": 1
                 }
                 if data['adtype'] == 1:
-                    ad_instance = Admin.query.filter_by(Admin.ADid == data.get("adid"), Admin.isdelete == 0)\
+                    ad_instance = Admin.query.filter(Admin.ADid == data.get("adid"), Admin.isdelete == 0)\
                         .first_('未找到该账号信息')
                     ad_instance.update(ad_dict, null='not')
                 elif data['adtype'] == 2:
-                    ad_instance = Doctor.query.filter_by(Doctor.DOid == data.get('adid'), Doctor.isdelete == 0)\
+                    ad_instance = Doctor.query.filter(Doctor.DOid == data.get('adid'), Doctor.isdelete == 0)\
                         .first_('未找到该账号信息')
                     ad_instance.update(ad_dict, null='not')
             db.session.add(ad_instance)
