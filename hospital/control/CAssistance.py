@@ -7,10 +7,10 @@ import uuid
 import json
 from sqlalchemy import false
 from flask import current_app, request
-from hospital.config.enums import FamilyType, ApplyStatus, AssistancePictureType
+from hospital.config.enums import FamilyType, ApplyStatus, AssistancePictureType, ApproveAction
 from hospital.control.CUser import CUser
 from hospital.extensions.error_response import ParamsError, DumpliError
-from hospital.extensions.interface.user_interface import token_required, is_user
+from hospital.extensions.interface.user_interface import token_required, is_user, admin_required
 from hospital.extensions.params_validates import parameter_required, validate_chinese, validate_arg, validate_datetime
 from hospital.extensions.register_ext import db
 from hospital.extensions.success_response import Success
@@ -48,6 +48,10 @@ class CAssistance(object):
                            'ATdate': atdate, 'ATincomeProof': data.get('atincomeproof'),
                            'ATstatus': ApplyStatus.waiting.value
                            }
+        if self._exist_assistance([Assistance.USid == assistance_dict['USid'],
+                                   Assistance.ATstatus == ApplyStatus.waiting.value]):
+            raise DumpliError('您已有申请在审核中，等待审核结果后，可再次提交')
+
         instance_list = []
         with db.auto_commit():
             assistance = Assistance.create(assistance_dict)
@@ -85,9 +89,29 @@ class CAssistance(object):
         """管理员获取申请列表"""
         pass
 
+    @admin_required
     def approve(self):
         """管理员审批"""
-        pass
+        data = request.json
+        atids = data.get('atids')
+        if not isinstance(atids, list):
+            raise ParamsError('atids 格式错误， 应为["id1","id2"]')
+        action = data.get('action')
+        try:
+            action = int(action)
+            ApproveAction(action)
+        except ValueError:
+            raise ParamsError('参数错误：action')
+        atstatus = ApplyStatus.passed.value if ApproveAction.agree.value == action else ApplyStatus.reject.value
+        instance_list = []
+        with db.auto_commit():
+            for atid in atids:
+                assistance = self._exist_assistance([Assistance.ATid == atid, ])
+                assistance.update({'ATstatus': atstatus,
+                                   'Reviewer': getattr(request, 'user').id, })
+                instance_list.append(assistance)
+            db.session.add_all(instance_list)
+        return Success('成功')
 
     @token_required
     def relatives_type(self):
@@ -176,3 +200,7 @@ class CAssistance(object):
     @staticmethod
     def _exist_assistance_relative(filter_args, msg=None):
         return AssistanceRelatives.query.filter(AssistanceRelatives.isdelete == false(), *filter_args).first_(msg)
+
+    @staticmethod
+    def _exist_assistance(filter_args, msg=None):
+        return Assistance.query.filter(Assistance.isdelete == false(), *filter_args).first_(msg)

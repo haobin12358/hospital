@@ -69,6 +69,11 @@ class ApplyStatus(Enum):
     passed = 10, '已通过'
 
 
+class ApproveAction(Enum):
+    agree = 10, '通过'
+    reject = -10, '拒绝'
+
+
 class AssistancePictureType(Enum):
     diagnosis = 1, '诊断证明'
     poverty = 2, '特困证明'
