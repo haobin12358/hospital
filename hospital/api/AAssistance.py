@@ -21,6 +21,7 @@ class AAssistance(Resource):
         apis = {
             'set_relatives': self.cassistance.set_relatives,
             'apply': self.cassistance.apply,
+            'approve': self.cassistance.approve,
         }
 
         return apis
