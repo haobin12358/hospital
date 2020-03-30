@@ -7,3 +7,4 @@ from .video import *
 from .register import *
 from .evaluation import *
 from .assistance import *
+from .activity import *
