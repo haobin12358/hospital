@@ -96,6 +96,9 @@ class CAssistance(object):
         atids = data.get('atids')
         if not isinstance(atids, list):
             raise ParamsError('atids 格式错误， 应为["id1","id2"]')
+        if not all(atids):
+            raise ParamsError('null type in atids')
+
         action = data.get('action')
         try:
             action = int(action)
@@ -107,6 +110,9 @@ class CAssistance(object):
         with db.auto_commit():
             for atid in atids:
                 assistance = self._exist_assistance([Assistance.ATid == atid, ])
+                if not assistance:
+                    current_app.logger.error('atid: {} not found'.format(atid))
+                    continue
                 assistance.update({'ATstatus': atstatus,
                                    'Reviewer': getattr(request, 'user').id, })
                 instance_list.append(assistance)
