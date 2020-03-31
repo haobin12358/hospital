@@ -204,7 +204,7 @@ class CUser(object):
                                                                        ).first()
         address_info = {'province': {'apid': apid, 'apname': apname},
                         'city': {'acid': acid, 'acname': acname},
-                        'area': {'aaid': area_id, 'acname': aaname}
+                        'area': {'aaid': area_id, 'aaname': aaname}
                         }
         return address_info
 
