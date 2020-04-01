@@ -78,6 +78,13 @@ class AssistancePictureType(Enum):
     diagnosis = 1, '诊断证明'
     poverty = 2, '特困证明'
 
+class ReviewStatus(Enum):
+    classes = 401, "课程"
+    register = 402, "挂诊"
+    activity = 403, "活动"
+    example = 404, "案例"
+    video = 405, "视频"
+
 
 if __name__ == '__main__':
     print(CourseStatus(101).zh_value)
