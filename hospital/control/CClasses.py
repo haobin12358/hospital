@@ -80,11 +80,12 @@ class CClasses:
         if args.get('token'):
             user = token_to_user_(args.get('token'))
             if user.model == "User":
+                doctor_list2 = []
                 doctor_list = Course.query.with_entities(Course.DOid).distinct().all_with_page()
                 for doctor in doctor_list:
-                    doid = doctor["DOid"]
+                    doid = doctor.DOid
                     doctor_dict = Doctor.query.filter(Doctor.DOid == doid, Doctor.isdelete == 0).first_("未找到医生信息")
-                    doctor.fill("doname", doctor_dict["DOname"]) # 医生名称
+                    doctor = doctor_dict
                     doctor_media = DoctorMedia.query.filter(DoctorMedia.isdelete == 0, DoctorMedia.DMtype == 0,
                                                             DoctorMedia.DOid == doid).first()
                     doctor.fill("dmmedia", doctor_media["DMmedia"]) # 医生主图
@@ -92,13 +93,14 @@ class CClasses:
                                                           Departments.DEid == doctor["DEid"])\
                         .first_("未找到科室信息")
                     doctor.fill("dename", department["DEname"]) # 科室名称
-                    doctor.fill("dotitle", doctor["DOtitle"]) # 医生职称
                     review_good = Review.query.filter(Review.isdelete == 0, Review.RVnum >= 4, Review.DOid == doid).all()
                     review = Review.query.filter(Review.isdelete == 0, Review.DOid == doid).all()
                     review_percentage = Decimal(str(int(len(review_good) / len(review) or 0)))
-                    doctor.fill("review_percentage", review_percentage) # 好评率
+                    doctor.fill("review_percentage", "{0}%".format(review_percentage * 100)) # 好评率
                     register = Register.query.filter(Register.DOid == doid, Register.isdelete == 0).all()
                     doctor.fill("registernum", len(register)) # 接诊次数
+                    doctor_list2.append(doctor)
+                classes.fill("doctor_list", doctor_list2)
         return Success(message="获取课程信息成功", data=classes)
 
     def set_course(self):
