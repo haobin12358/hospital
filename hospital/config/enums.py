@@ -63,6 +63,17 @@ class SubscribeStatus(Enum):
     had_review = 203, '已评价'
 
 
+class ActivityStatus(Enum):
+    ready = 0, '未开始'
+    over = 10, '已结束'
+
+
+class UserActivityStatus(Enum):
+    ready = 0, '待开始'
+    comment = 10, '待评价'
+    reviewed = 20, '已评价'
+
+
 class ApplyStatus(Enum):
     reject = -10, '未通过'
     waiting = 0, '审核中'
