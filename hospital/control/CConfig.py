@@ -236,4 +236,8 @@ class CConfig:
         csd = Setting.query.filter(Setting.isdelete == 0, Setting.STname == "VIP").first()
         return Success(data=csd)
 
-
+    def get_pointtask(self):
+        """获取任务列表"""
+        # TODO 后台直接获取
+        # TODO 前台需要增加是否可完成的状态
+        return
