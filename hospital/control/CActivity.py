@@ -4,7 +4,7 @@ create user: wiilz
 last update time:2020/04/03 01:09
 """
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy import false
 from flask import current_app, request
 from hospital.config.enums import ActivityStatus, UserActivityStatus
@@ -12,8 +12,9 @@ from hospital.config.timeformat import format_for_web_second
 from hospital.extensions.error_response import ParamsError, StatusError, TokenError
 from hospital.extensions.interface.user_interface import is_user, admin_required, is_anonymous, token_required, is_admin
 from hospital.extensions.params_validates import parameter_required, validate_datetime
-from hospital.extensions.register_ext import db
+from hospital.extensions.register_ext import db, conn, celery
 from hospital.extensions.success_response import Success
+from hospital.extensions.tasks import change_activity_status
 from hospital.models import Activity, UserActivity, User
 
 
@@ -52,7 +53,12 @@ class CActivity(object):
                 ac_dict['ACstatus'] = ActivityStatus.ready.value
                 activity = Activity.create(ac_dict)
                 msg = '添加成功'
-                # todo 异步任务
+                # 异步任务
+                task_id = change_activity_status.apply_async(args=(ac_dict['ACid'],),
+                                                             eta=acstarttime - timedelta(hours=8))
+                connid = 'start_activity{}'.format(ac_dict['ACid'])
+                current_app.logger.info('activity async task | connid: {}, task_id: {}'.format(connid, task_id))
+                conn.set(connid, str(task_id))
             else:
                 activity = Activity.query.filter(Activity.isdelete == false(),
                                                  Activity.ACid == acid).first_('活动不存在')
@@ -61,6 +67,14 @@ class CActivity(object):
                     activity.update({'isdelete': True})
                     msg = '删除成功'
                 else:
+                    # 编辑后更新异步任务
+                    conid = 'start_activity{}'.format(activity.ACid)
+                    exist_task_id = conn.get(conid)
+                    if exist_task_id:
+                        exist_task_id = str(exist_task_id, encoding='utf-8')
+                        current_app.logger.info('已有任务id: {}'.format(exist_task_id))
+                        celery.AsyncResult(exist_task_id).revoke()
+                        conn.delete(conid)
                     parameter_required(required_dict, datafrom=data)
                     activity.update(ac_dict)
                     msg = '更新成功'
@@ -162,6 +176,9 @@ class CActivity(object):
             raise TokenError
         data = parameter_required('acid')
         usid = getattr(request, 'user').id
+        user = User.query.filter(User.isdelete == false(), User.USid == usid).first_('请重新登录')
+        if not user.UStelphone:
+            raise StatusError("请先在 '我的 - 我的家人' 中完善本人信息")
         activity = Activity.query.filter(Activity.isdelete == false(),
                                          Activity.ACstatus == ActivityStatus.ready.value,
                                          Activity.ACstartTime >= datetime.now(),

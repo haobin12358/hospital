@@ -67,3 +67,14 @@ class AddressArea(Base):
     AAid = Column(String(8), primary_key=True, comment='区县id')
     AAname = Column(String(32), nullable=False, comment='区县名')
     ACid = Column(String(8), nullable=False, comment='市名')
+
+class PointTask(Base):
+    """任务列表"""
+    __tablename__ = "PointTask"
+    PTid = Column(String(64), primary_key=True, comment="任务id")
+    PTname = Column(String(255), comment="任务内容")
+    PTtype = Column(Integer, comment="701登录702邀请新用户703完善个人信息704完善家人信息705购买会员"
+                                     "706充值707看视频708挂号709评论710积分购物711报名活动712公益援助713健康测评")
+    PTnumber = Column(Integer, comment="积分数")
+    PTtime = Column(Integer, comment="限制次数， -表示限制次数+表示每日次数")
+    PTicon = Column(Text, url=True, comment="icon")

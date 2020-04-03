@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import os
+import redis
 from contextlib import contextmanager
+from flask_celery import Celery
 from flask_sqlalchemy import SQLAlchemy as _SQLAlchemy
 from hospital.extensions.aliyunoss.storage import AliyunOss
 from .query_session import Query
@@ -35,7 +37,12 @@ wx_server = WeixinMP(SERVICE_APPID, SERVICE_APPSECRET,
 
 ali_oss = AliyunOss(ACCESS_KEY_ID, ACCESS_KEY_SECRET, ALIOSS_BUCKET_NAME, ALIOSS_ENDPOINT)
 
+celery = Celery()
+
+conn = redis.Redis(host='localhost', port=6379, db=1)
+
 
 def register_ext(app, logger_file='/tmp/hospital/'):
     db.init_app(app)
+    celery.init_app(app)
     LoggerHandler(app, file=logger_file).error_handler()
