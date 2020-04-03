@@ -98,5 +98,12 @@ class ReviewStatus(Enum):
     video = 405, "视频"
 
 
+class ConsultationStatus(Enum):
+    ready = 0, '未开始'
+    # ongoing = 1, '会诊中'
+    finish = 2, '已结束'
+    # abort = 10, '中止'
+
+
 if __name__ == '__main__':
     print(CourseStatus(101).zh_value)
