@@ -3,15 +3,16 @@
 create user: haobin12358
 last update time:2020/3/13 03:53
 """
-import uuid
+import uuid, datetime
 from flask import request, current_app
-from hospital.extensions.interface.user_interface import admin_required
+from hospital.extensions.interface.user_interface import admin_required, is_admin, is_hign_level_admin
 from hospital.extensions.register_ext import db
 from hospital.extensions.params_validates import parameter_required
 from hospital.extensions.success_response import Success
-from hospital.extensions.error_response import AuthorityError
+from hospital.extensions.error_response import AuthorityError, SystemError
 from hospital.extensions.request_handler import token_to_user_
 from hospital.models.config import Banner, Setting, Characteristicteam, Honour, PointTask
+from hospital.models.user import UserIntegral, User
 
 class CConfig:
 
@@ -239,35 +240,135 @@ class CConfig:
 
     def get_pointtask(self):
         """获取任务列表"""
-        # TODO 后台直接获取
-        # TODO 前台需要增加是否可完成的状态
         args = parameter_required(('token', ))
         user = token_to_user_(args.get('token'))
         if user.model == "Doctor":
             return AuthorityError()
         else:
-            pointtask = PointTask.query.filter(PointTask.isdelete == 0).order_by(PointTask.PTid.asc()).all()
+            pointtask_list = PointTask.query.filter(PointTask.isdelete == 0).order_by(PointTask.PTid.asc()).all()
             if user.model == "User":
-                # TODO 前台需要增加是否可完成的状态
-                pass
-        return
+                # 前台需要增加是否可完成的状态
+                for pointtask in pointtask_list:
+                    userintegral = UserIntegral.query.filter(UserIntegral.isdelete == 0, UserIntegral.UItrue == 0,
+                                                             UserIntegral.UItype == 1,
+                                                             UserIntegral.UIaction == pointtask.PTtype).all()
+                    if userintegral:
+                        pointtask.fill("is_get", 1)
+                    else:
+                        pointtask.fill("is_get", 0)
+        return Success(message="获取任务列表成功", data=pointtask_list)
 
     def update_pointtask(self):
         """更新任务积分以及次数"""
-        # TODO 后台更新次数以及积分数，负表示仅限次数，0表示无限次，正表示每日可完成次数
-        return
+        # 后台更新次数以及积分数，负表示仅限次数，0表示无限次，正表示每日可完成次数
+        if not (is_admin() or is_hign_level_admin()):
+            return AuthorityError()
+        data = parameter_required('ptid', 'ptnumber', 'pttime', 'pticon')
+        pt_dict = {
+            "PTnumber": data.get('ptnumber'),
+            "PTtime": data.get('pttime'),
+            "PTicon": data.get('pticon')
+        }
+        pt_instance = PointTask.query.filter(PointTask.PTid == data.get('ptid')).first_("未找到该任务")
+        with db.auto_commit():
+            pt_instance.update(pt_dict, null='not')
+            db.session.add(pt_instance)
+        return Success(message="更新任务成功")
 
     def get_integral(self):
         """获取个人积分变动情况"""
-        # TODO 后台可筛选，前台默认用户token
-        return
+        # 后台可筛选，前台默认用户token
+        args = parameter_required(('token', ))
+        filter_args = [UserIntegral.isdelete == 0]
+        user = token_to_user_(args.get('token'))
+        if user.model == "User":
+            filter_args.append(UserIntegral.USid == user.id)
+        else:
+            if not (is_admin() or is_hign_level_admin()):
+                return AuthorityError()
+            if args.get('usid'):
+                filter_args.append(UserIntegral.USid == args.get('usid'))
+        userIntegral = UserIntegral.query.filter(*filter_args).order_by(UserIntegral.createtime.desc()).all_with_page()
+        return Success(message="获取积分变动成功", data=userIntegral)
 
-    def _judge_point(self, pttype, uitype):
+    def _judge_point(self, pttype, uitype, usid, uiintegral=None):
         """判断积分是否可以写入, 如果可以，则写入，如果不可以，则pass"""
-        # TODO 前台多api调用，传入type，基于pttime和len(userintegral)判断是否写入
-        return
+        # 前台多api调用，传入type，基于pttime和len(userintegral)判断是否写入
+        with db.auto_commit():
+            if uitype == 1:
+                """收入"""
+                pointtask = PointTask.query.filter(PointTask.PTtype == pttype).first_("该类型错误")
+                pttime = int(pointtask.PTtime)
+                ui_dict = {
+                    "UIid": str(uuid.uuid1()),
+                    "USid": usid,
+                    "UIintegral": pointtask.PTnumber,
+                    "UIaction": pttype,
+                    "UItype": uitype,
+                    "UItrue": 0
+                }
+                if pttime > 0:
+                    # 每日限制次数
+                    time_start = datetime.datetime(datetime.datetime.now().year, datetime.datetime.now().month,
+                                                   datetime.datetime.now().day, 0, 0, 0)
+                    time_end = datetime.datetime(datetime.datetime.now().year, datetime.datetime.now().month,
+                                                   datetime.datetime.now().day, 23, 59, 59)
+                    # 当日已完成次数
+                    userintegral = UserIntegral.query.filter(UserIntegral.createtime > time_start,
+                                                             UserIntegral.createtime < time_end,
+                                                             UserIntegral.isdelete == 0,
+                                                             UserIntegral.UIaction == pttype).all()
+                    if len(userintegral) >= pttime:
+                        return 0
+                    else:
+                        ui_instance = UserIntegral.create(ui_dict)
+                elif pttime < 0:
+                    # 一次性
+                    userintegral = UserIntegral.query.filter(UserIntegral.isdelete == 0,
+                                                             UserIntegral.UIaction == pttype).all()
+                    if userintegral:
+                        return 0
+                    else:
+                        ui_instance = UserIntegral.create(ui_dict)
+                else:
+                    # 不限次
+                    ui_instance = UserIntegral.create(ui_dict)
+            elif uitype == 2:
+                """支出"""
+                ui_dict = {
+                    "UIid": str(uuid.uuid1()),
+                    "USid": usid,
+                    "UIintegral": uiintegral,
+                    "UIaction": pttype,
+                    "UItype": uitype,
+                    "UItrue": 0
+                }
+                ui_instance = UserIntegral.create(ui_dict)
+            else:
+                return SystemError("服务端异常")
+            db.session.add(ui_instance)
+            return 1
 
     def get_point(self):
-        """获取积分"""
-        # TODO 前台领取积分，基于ptid查找uitrue=0且uiaction=pttype的第一条数据，更新uitrue字段
-        return
+        """领取积分"""
+        # 前台领取积分，基于ptid查找uitrue=0且uiaction=pttype的第一条数据，更新uitrue字段
+        data = parameter_required(('ptid', ))
+        args = request.args.to_dict()
+        user = token_to_user_(args['token'])
+        pointtask = PointTask.query.filter(PointTask.isdelete == 0,
+                                           PointTask.PTid == data.get('ptid')).first_("未找到该任务")
+        pttype = pointtask.PTtype
+        userintegral = UserIntegral.query.filter(UserIntegral.isdelete == 0, UserIntegral.USid == user.id,
+                                                 UserIntegral.UItype == 1, UserIntegral.UItrue == 0,
+                                                 UserIntegral.UIaction == pttype)\
+            .first_("无可领取积分")
+        with db.auto_commit():
+            ui_instance = UserIntegral.query.filter(UserIntegral.UIid == userintegral.UIid).first()
+            ui_instance.update({"UItrue": 1})
+            us_instance = User.query.filter(User.USid == user.id).first()
+            usintegral = int(us_instance.USintegral or 0) + int(pointtask.PTnumber or 0)
+            us_instance.update({"USintegral": usintegral})
+            db.session.add(ui_instance)
+            db.session.add(us_instance)
+
+        return Success(message="领取成功")
