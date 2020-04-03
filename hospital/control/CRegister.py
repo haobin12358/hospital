@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import re
 from datetime import date, datetime
 
 from flask import current_app, request
@@ -11,7 +10,7 @@ from hospital.config.enums import RegisterStatus
 from hospital.config.timeformat import format_forweb_no_HMS
 from hospital.extensions.interface.user_interface import token_required
 from hospital.extensions.success_response import Success
-from hospital.extensions.error_response import ParamsError, NotFound
+from hospital.extensions.error_response import ParamsError
 from hospital.extensions.params_validates import parameter_required
 from hospital.extensions.register_ext import db
 from hospital.models import Register, Family, Departments
