@@ -91,7 +91,7 @@ class ApiError(BaseError):
 class TimeError(BaseError):
     status = 405
     status_code = 405009
-    message = "敬请期待"
+    message = "有效时间有误"
 
 
 class PoorScore(BaseError):
