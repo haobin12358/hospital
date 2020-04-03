@@ -77,3 +77,4 @@ class PointTask(Base):
                                      "706充值707看视频708挂号709评论710积分购物711报名活动712公益援助713健康测评")
     PTnumber = Column(Integer, comment="积分数")
     PTtime = Column(Integer, comment="限制次数， -表示限制次数+表示每日次数")
+    PTicon = Column(Text, url=True, comment="icon")
