@@ -4,7 +4,7 @@
 create user: wiilz
 last update time:2020/3/30 15:15
 """
-from sqlalchemy import Integer, String, Text, DateTime
+from sqlalchemy import Integer, String, Text, DateTime, orm
 from hospital.extensions.base_model import Base, Column
 
 
@@ -21,6 +21,11 @@ class Activity(Base):
     ACdetail = Column(Text, comment='活动介绍')
     ACnumber = Column(Integer, comment='活动人数')
     ACstatus = Column(Integer, default=0, comment='活动状态 0：未开始， 10：已结束')
+
+    @orm.reconstructor
+    def __init__(self):
+        super(Activity, self).__init__()
+        self.hide('ADid')
 
 
 class UserActivity(Base):

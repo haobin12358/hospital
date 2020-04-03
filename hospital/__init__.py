@@ -3,6 +3,7 @@ from flask import Flask
 from flask import Blueprint
 from flask_cors import CORS
 
+from .api.AActivity import AActivity
 from .api.AAssistance import AAssistance
 from .api.AFile import AFile
 from .api.AHello import AHello
@@ -40,6 +41,7 @@ def register(app):
     bp.add_url_rule('/evaluation/<string:evaluation>', view_func=AEvaluation.as_view('evaluation'))
     bp.add_url_rule('/assistance/<string:assistance>', view_func=AAssistance.as_view('assistance'))
     bp.add_url_rule('/review/<string:review>', view_func=AReview.as_view('review'))
+    bp.add_url_rule('/activity/<string:activity>', view_func=AActivity.as_view('activity'))
     app.register_blueprint(bp)
 
 
