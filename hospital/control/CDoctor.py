@@ -4,7 +4,7 @@ import re
 from flask import current_app
 import uuid
 
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 from werkzeug.security import generate_password_hash
 
 from hospital.extensions.interface.user_interface import admin_required
@@ -12,8 +12,8 @@ from hospital.extensions.success_response import Success
 from hospital.extensions.error_response import ParamsError, NotFound
 from hospital.extensions.params_validates import parameter_required
 from hospital.extensions.register_ext import db
-from hospital.models import Departments, Symptom, Doctor, DoctorMedia
-from hospital.config.enums import DoctorMetiaType
+from hospital.models import Departments, Symptom, Doctor, DoctorMedia, Consultation, Enroll
+from hospital.config.enums import DoctorMetiaType, ConsultationStatus
 
 
 class CDoctor(object):
@@ -21,6 +21,7 @@ class CDoctor(object):
     def get(self):
         data = parameter_required('doid')
         doid = data.get('doid')
+        conid = data.get('conid')
         doctor = Doctor.query.filter(
             Doctor.DOid == doid, Doctor.isdelete == 0).first()
         if not doctor:
@@ -31,7 +32,11 @@ class CDoctor(object):
         self._fill_department(doctor)
         self._fill_doctor_mainpic(doctor)
         self._fill_doctor_listpic(doctor)
-        self._fill_doctor_qrpic(doctor)
+        # self._fill_doctor_qrpic(doctor)
+        if conid:
+            # 填充会诊信息
+            self._fill_consultation(doctor, conid)
+
         doctor.fill('favorablerate', '100%')
         doctor.fill('treatnum', '0')
         return Success('获取成功', data=doctor)
@@ -254,11 +259,25 @@ class CDoctor(object):
 
         db.session.add(dmmain_new)
 
-    def __check_password(self, password):
-        if not password or len(password) < 4:
-            raise ParamsError('密码长度低于4位')
-        zh_pattern = re.compile(r'[\u4e00-\u9fa5]+')
-        match = zh_pattern.search(password)
-        if match:
-            raise ParamsError(u'密码包含中文字符')
-        return True
+    def _fill_consultation(self, doctor, conid):
+        con = Consultation.query.filter(Consultation.CONid == conid, Consultation.DOid == doctor.DOid,
+                                        Consultation.isdelete == 0).first()
+        if con:
+            self._fill_doctor_qrpic(doctor)
+            con_count = db.session.query(func.count(Enroll.ENid)).filter(
+                Enroll.CONid == con.CONid, Enroll.isdelete == 0).scalar()
+            doctor.fill('conremainder', (int(con.CONlimit) - int(con_count)))
+            doctor.fill('DOname', con.DOname)
+            doctor.fill('DOtel', con.DOtel)
+            doctor.fill('DOtitle', con.DOtitle)
+            doctor.fill('DOdetails', con.DOdetails)
+            doctor.fill('DOwxid', con.DOwxid)
+            doctor.fill('DOskilledIn', con.DOskilledIn)
+            doctor.fill('dename', con.DEname)
+            doctor.fill('CONstartTime', con.CONstartTime)
+            doctor.fill('CONid', con.CONid)
+            doctor.fill('CONlimit', con.CONlimit)
+            doctor.fill('CONstatus', con.CONstatus)
+            doctor.fill('CONstatus_zh', ConsultationStatus(con.CONstatus).zh_value)
+
+
