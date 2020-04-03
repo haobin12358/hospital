@@ -9,3 +9,4 @@ from .evaluation import *
 from .assistance import *
 from .activity import *
 from .review import *
+from .coupon import *
