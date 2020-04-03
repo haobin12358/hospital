@@ -6,10 +6,10 @@ import uuid
 
 from hospital.extensions.interface.user_interface import doctor_required
 from hospital.extensions.success_response import Success
-from hospital.extensions.error_response import ParamsError, NotFound
+from hospital.extensions.error_response import ParamsError
 from hospital.extensions.params_validates import parameter_required
 from hospital.extensions.register_ext import db
-from hospital.models import Series, Doctor, Video
+from hospital.models import Series, Video
 
 
 class CVideo(object):

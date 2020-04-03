@@ -4,7 +4,7 @@ import re
 from flask import current_app
 import uuid
 
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 from werkzeug.security import generate_password_hash
 
 from hospital.extensions.interface.user_interface import admin_required
@@ -12,7 +12,7 @@ from hospital.extensions.success_response import Success
 from hospital.extensions.error_response import ParamsError, NotFound
 from hospital.extensions.params_validates import parameter_required
 from hospital.extensions.register_ext import db
-from hospital.models import Departments, Symptom, Doctor, DoctorMedia, Consultation
+from hospital.models import Departments, Symptom, Doctor, DoctorMedia, Consultation, Enroll
 from hospital.config.enums import DoctorMetiaType, ConsultationStatus
 
 
@@ -264,6 +264,9 @@ class CDoctor(object):
                                         Consultation.isdelete == 0).first()
         if con:
             self._fill_doctor_qrpic(doctor)
+            con_count = db.session.query(func.count(Enroll.ENid)).filter(
+                Enroll.CONid == con.CONid, Enroll.isdelete == 0).scalar()
+            doctor.fill('conremainder', (int(con.CONlimit) - int(con_count)))
             doctor.fill('DOname', con.DOname)
             doctor.fill('DOtel', con.DOtel)
             doctor.fill('DOtitle', con.DOtitle)

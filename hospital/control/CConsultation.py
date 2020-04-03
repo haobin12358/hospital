@@ -8,7 +8,7 @@ from sqlalchemy import cast, Date, func
 
 from hospital.config.timeformat import format_for_web_second, format_forweb_no_HMS
 from hospital.control.CDoctor import CDoctor
-from hospital.extensions.interface.user_interface import doctor_required, is_doctor, token_required, is_admin
+from hospital.extensions.interface.user_interface import doctor_required, is_doctor, token_required, is_user
 from hospital.extensions.success_response import Success
 from hospital.extensions.error_response import ParamsError, StatusError
 from hospital.extensions.params_validates import parameter_required
@@ -28,25 +28,21 @@ class CConsultation(CDoctor):
         doid = data.get('doid')
         condate = data.get('condate')
 
-        now = datetime.now()
-        filter_args = [
-            Consultation.DOid == Doctor.DOid, Departments.DEid == Doctor.DEid,
-            Consultation.CONstatus == 1, Consultation.isdelete == 0, now <= Consultation.CONendTime,
-            Doctor.isdelete == 0, Departments.isdelete == 0
-        ]
+        filter_args = [Consultation.isdelete == 0,]
         if is_doctor():
             doid = getattr(request, 'user').id
 
         if doid:
             filter_args.append(Consultation.DOid == doid)
-        if constatus and is_admin():
+        if not constatus and is_user():
+            filter_args.append(Consultation.CONstatus == ConsultationStatus.ready.value)
+        elif constatus:
             try:
                 constatus = ConsultationStatus(int(str(constatus))).value
             except:
                 raise ParamsError('状态筛选参数异常')
             filter_args.append(Consultation.CONstatus == constatus)
-        else:
-            filter_args.append(Consultation.CONstatus == ConsultationStatus.ready.value)
+
         if condate:
             if not isinstance(condate, date):
                 try:
@@ -60,8 +56,11 @@ class CConsultation(CDoctor):
 
         for con in con_list:
             self._fill_doctor_mainpic(con)
+            con_count = db.session.query(func.count(Enroll.ENid)).filter(
+                Enroll.CONid == con.CONid, Enroll.isdelete == 0).scalar()
+            con.fill('conremainder', (int(con.CONlimit) - int(con_count)))
+        return Success('获取成功', data=con_list)
 
-    # def
     @doctor_required
     def add_or_update_consultation(self):
         data = parameter_required()
@@ -173,7 +172,9 @@ class CConsultation(CDoctor):
             Enroll.CONid == conid, Enroll.isdelete == 0).scalar()
         if con_count >= int(con.CONlimit):
             raise StatusError('名额已满')
-
+        enroll_user = Enroll.query.filter(Enroll.USid == usid, Enroll.CONid == conid).first()
+        if enroll_user:
+            raise StatusError('已经报名成功')
         with db.auto_commit():
             enroll = Enroll.create({
                 'ENid': str(uuid.uuid1()),
