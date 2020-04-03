@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import re
 from datetime import date, datetime
 
 from flask import current_app, request
@@ -9,16 +8,15 @@ from sqlalchemy import or_, and_
 
 from hospital.config.enums import RegisterStatus
 from hospital.config.timeformat import format_forweb_no_HMS
-from .CUser import CUser
 from hospital.extensions.interface.user_interface import token_required
 from hospital.extensions.success_response import Success
-from hospital.extensions.error_response import ParamsError, NotFound
+from hospital.extensions.error_response import ParamsError
 from hospital.extensions.params_validates import parameter_required
 from hospital.extensions.register_ext import db
 from hospital.models import Register, Family, Departments
 
 
-class CRegister(CUser):
+class CRegister(object):
     def __init__(self):
         pass
 
@@ -95,7 +93,7 @@ class CRegister(CUser):
         if family:
             register.fill('FAname', family.FAname)
             register.fill('FAtel', family.FAtel)
-            register.fill('FAaddress', self._combine_address_by_area_id(family.AAid))
+            register.fill('FAaddress', family.FAaddress)
         dep = Departments.query.filter(Departments.DEid == register.DEid, Departments.isdelete == 0).first()
         if dep:
             register.fill('DEname', dep.DEname)
