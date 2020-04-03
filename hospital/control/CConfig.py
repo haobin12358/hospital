@@ -9,8 +9,9 @@ from hospital.extensions.interface.user_interface import admin_required
 from hospital.extensions.register_ext import db
 from hospital.extensions.params_validates import parameter_required
 from hospital.extensions.success_response import Success
-from hospital.extensions.error_response import ParamsError
-from hospital.models.config import Banner, Setting, Characteristicteam, Honour
+from hospital.extensions.error_response import AuthorityError
+from hospital.extensions.request_handler import token_to_user_
+from hospital.models.config import Banner, Setting, Characteristicteam, Honour, PointTask
 
 class CConfig:
 
@@ -240,4 +241,33 @@ class CConfig:
         """获取任务列表"""
         # TODO 后台直接获取
         # TODO 前台需要增加是否可完成的状态
+        args = parameter_required(('token', ))
+        user = token_to_user_(args.get('token'))
+        if user.model == "Doctor":
+            return AuthorityError()
+        else:
+            pointtask = PointTask.query.filter(PointTask.isdelete == 0).order_by(PointTask.PTid.asc()).all()
+            if user.model == "User":
+                # TODO 前台需要增加是否可完成的状态
+                pass
+        return
+
+    def update_pointtask(self):
+        """更新任务积分以及次数"""
+        # TODO 后台更新次数以及积分数，负表示仅限次数，0表示无限次，正表示每日可完成次数
+        return
+
+    def get_integral(self):
+        """获取个人积分变动情况"""
+        # TODO 后台可筛选，前台默认用户token
+        return
+
+    def _judge_point(self, pttype, uitype):
+        """判断积分是否可以写入, 如果可以，则写入，如果不可以，则pass"""
+        # TODO 前台多api调用，传入type，基于pttime和len(userintegral)判断是否写入
+        return
+
+    def get_point(self):
+        """获取积分"""
+        # TODO 前台领取积分，基于ptid查找uitrue=0且uiaction=pttype的第一条数据，更新uitrue字段
         return
