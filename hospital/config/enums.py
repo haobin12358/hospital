@@ -89,6 +89,7 @@ class AssistancePictureType(Enum):
     diagnosis = 1, '诊断证明'
     poverty = 2, '特困证明'
 
+
 class ReviewStatus(Enum):
     classes = 401, "课程"
     register = 402, "挂诊"
