@@ -66,6 +66,7 @@ class UserIntegral(Base):
     UIintegral = Column(Integer, comment='该动作产生的积分变化数')
     UIaction = Column(Integer, default=1, comment='积分变动原因')
     UItype = Column(Integer, default=1, comment='积分变动类型 1 收入 2 支出')
+    UItrue = Column(Integer, default=0, comment='是否领取 0 未领取 1已领取')
 
 
 class IdentifyingCode(Base):
