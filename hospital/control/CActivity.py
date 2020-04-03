@@ -58,7 +58,7 @@ class CActivity(object):
                                                              eta=acstarttime - timedelta(hours=8))
                 connid = 'start_activity{}'.format(ac_dict['ACid'])
                 current_app.logger.info('activity async task | connid: {}, task_id: {}'.format(connid, task_id))
-                conn.set(connid, task_id)
+                conn.set(connid, str(task_id))
             else:
                 activity = Activity.query.filter(Activity.isdelete == false(),
                                                  Activity.ACid == acid).first_('活动不存在')
