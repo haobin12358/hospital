@@ -97,6 +97,14 @@ class ReviewStatus(Enum):
     example = 404, "案例"
     video = 405, "视频"
 
+class CouponStatus(Enum):
+    use = 501, "可领取"
+    end = 502, "已结束"
+
+class CouponUserStatus(Enum):
+    had_use = 601, "已经使用"
+    not_use = 602, "优惠折扣"
+    had_delete = 603, "已经过期"
 
 if __name__ == '__main__':
     print(CourseStatus(101).zh_value)
