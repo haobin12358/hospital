@@ -2,8 +2,7 @@
 import os
 from datetime import datetime
 from flask import request, current_app
-
-from hospital.extensions.aliyunoss.storage import AliyunOss
+from hospital.extensions.register_ext import ali_oss
 from ..common.compress_picture import CompressPicture
 from ..extensions.error_response import NotFound, ParamsError, SystemError, TokenError
 from ..common.video_thumbnail import video2frames
@@ -13,8 +12,6 @@ from ..extensions.success_response import Success
 
 
 class CFile(object):
-    def __init__(self):
-        self.oss = AliyunOss(current_app)
 
     @token_required
     def upload_img(self):
@@ -90,7 +87,7 @@ class CFile(object):
                 video_dur = minute_str + ':' + second_str
 
                 try:
-                    self.oss.save(data=newFile, filename=data[1:])
+                    ali_oss.save(data=newFile, filename=data[1:])
                 except Exception as e:
                     current_app.logger.error(">>>  视频上传到阿里云出错 : {}  <<<".format(e))
                     raise ParamsError('上传视频失败，请稍后再试')
@@ -98,7 +95,7 @@ class CFile(object):
                 video_thumbnail_path = os.path.join(newPath, thum_name.get('thumbnail_name_list')[0])
 
                 try:
-                    self.oss.save(data=video_thumbnail_path, filename=video_thum[1:])
+                    ali_oss.save(data=video_thumbnail_path, filename=video_thum[1:])
                 except Exception as e:
                     current_app.logger.error(">>>  视频预览图上传到阿里云出错 : {}  <<<".format(e))
             else:
@@ -116,7 +113,7 @@ class CFile(object):
 
                 # 上传到七牛云，并删除本地压缩图
                 try:
-                    self.oss.save(data=thumbnail_img, filename=data[1:])
+                    ali_oss.save(data=thumbnail_img, filename=data[1:])
                     os.remove(str(newFile + '_' + thumbnail_img.split('_')[-1]))
                 except Exception as e:
                     current_app.logger.error(">>>  图片上传到阿里云出错 : {}  <<<".format(e))
