@@ -122,7 +122,7 @@ class ProductStatus(Enum):
     auditing = 10, '新增'
     delete = 30, '删除'
     sell_out = 40, '售罄'
-    off_shelves = 0, '下架'
+    off_shelves = 60, '下架'
 
 
 class ProductType(Enum):

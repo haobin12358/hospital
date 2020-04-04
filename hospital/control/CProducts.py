@@ -40,7 +40,8 @@ class CProducts(object):
 
         products = Products.query.filter(*filter_args).order_by(
             Products.PRsort.asc(), Products.createtime.desc()).all_with_page()
-        # todo 修改售空状态
+        for product in products:
+            self._fill_coupon(product)
         return Success('获取成功', data=products)
 
     def get(self):
@@ -51,15 +52,7 @@ class CProducts(object):
             filter_args.append(Products.PRstatus == ProductStatus.usual.value)
         product = Products.query.filter(*filter_args).first_('商品已下架')
         product.add('PRdesc', 'PRdetails')
-        # tood 填充优惠券信息
-        if product.COid:
-            coupon = Coupon.query.filter(Coupon.COid == product.COid, Coupon.isdelete == 0).first_('优惠券已失效')
-            if coupon.COdownline == 0:
-                coupon.fill("codownline_zh", "无限制")
-            else:
-                coupon.fill("codownline_zh", "满足{0}元即可使用".format(Decimal(str(coupon.COdownline))))
-            coupon.fill("cotime", "{0}月{1}日-{2}月{3}日".format(coupon.COstarttime.month, coupon.COstarttime.day,
-                                                             coupon.COendtime.month, coupon.COendtime.day))
+        self._fill_coupon(product)
         return Success('获取成功', data=product)
 
     @admin_required
@@ -71,16 +64,11 @@ class CProducts(object):
         admin = Admin.query.filter(Admin.ADid == adid, Admin.isdelete == 0,
                                    Admin.ADstatus == AdminStatus.normal.value).first_('当前管理员账号已冻结')
 
-        # = data.get('prid')
+        prid, prprice, prvipprice, prtype, prstatus, printegral, prvipintegral, prstock, prsort, prdetails = (
+            data.get('prid'), data.get('prprice'), data.get('prvipprice'), data.get('prtype'), data.get('prstatus'),
+            data.get('printegral'), data.get('prvipintegral'), data.get('prstock'), data.get('prsort'),
+            data.get('prdetails'),)
 
-        # prid, prprice, PRtype, PRvipPrice, PRstatus, PRintegral, PRvipIntegral, PRstock, PRsort =
-        # data.get('constarttime'), data.get('conendtime'), \
-        #                                                 data.get('conlimit'), data.get('constatus')
-        params_name = ['prid', 'prprice', 'prvipprice', 'prtype', 'prstatus',
-                       'printegral', 'prvipintegral', 'prstock', 'prsort', 'prdetails']
-        names = locals()
-        for key in params_name:
-            names[key] = data.get(key)
         if prprice:
             prprice = self._trans_decimal(prprice)
         if prvipprice:
@@ -113,7 +101,7 @@ class CProducts(object):
             if prid:
                 product = Products.query.filter(
                     Products.PRid == prid, Products.isdelete == 0).first()
-                current_app.logger.info('get product {} '.format(con))
+                current_app.logger.info('get product {} '.format(product))
                 # 优先判断删除
                 if data.get('delete'):
                     if not product:
@@ -152,7 +140,7 @@ class CProducts(object):
                     return Success('更新成功', data=prid)
             # 添加
             data = parameter_required({
-                'prtitle': '商品名', 'prtype': '商品类型', 'prmedia': '商品主图', 'prstock': '库存'
+                'prtitle': '商品名', 'prtype': '商品类型', 'prstock': '库存'
             })
 
             prid = str(uuid.uuid1())
@@ -175,7 +163,7 @@ class CProducts(object):
 
             current_app.logger.info('{} 创建商品 {}'.format(admin.ADid, data.get('prtitle')))
             db.session.add(product)
-        return Success('创建会诊成功', data=prid)
+        return Success('创建商品成功', data=prid)
 
     def _trans_decimal(self, price):
         if not price:
@@ -211,8 +199,17 @@ class CProducts(object):
                 exec_sql.delete_(
                     synchronize_session=False)
                 return Success('删除成功')
-            exec_sql.update({
-                'PRstatus': prstatus
-            })
+            exec_sql.update({'PRstatus': prstatus}, synchronize_session=False)
 
         return Success('{}成功'.format(ProductStatus(prstatus).zh_value))
+
+    def _fill_coupon(self, product):
+        if product.COid and product.PRtype == ProductType.coupon.value:
+            coupon = Coupon.query.filter(Coupon.COid == product.COid, Coupon.isdelete == 0).first_('优惠券已失效')
+            if coupon.COdownline == 0:
+                coupon.fill("codownline_zh", "无限制")
+            else:
+                coupon.fill("codownline_zh", "满足{0}元即可使用".format(Decimal(str(coupon.COdownline))))
+            coupon.fill("cotime", "{0}月{1}日-{2}月{3}日".format(
+                coupon.COstarttime.month, coupon.COstarttime.day, coupon.COendtime.month, coupon.COendtime.day))
+            product.fill('coupon', coupon)
