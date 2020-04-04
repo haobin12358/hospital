@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-import re
-
 from flask import current_app
 import uuid
 
@@ -12,7 +10,7 @@ from hospital.extensions.success_response import Success
 from hospital.extensions.error_response import ParamsError, NotFound
 from hospital.extensions.params_validates import parameter_required
 from hospital.extensions.register_ext import db
-from hospital.models import Departments, Symptom, Doctor, DoctorMedia, Consultation, Enroll
+from hospital.models import Departments, Doctor, DoctorMedia, Consultation, Enroll
 from hospital.config.enums import DoctorMetiaType, ConsultationStatus
 
 
@@ -279,5 +277,3 @@ class CDoctor(object):
             doctor.fill('CONlimit', con.CONlimit)
             doctor.fill('CONstatus', con.CONstatus)
             doctor.fill('CONstatus_zh', ConsultationStatus(con.CONstatus).zh_value)
-
-
