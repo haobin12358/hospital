@@ -24,15 +24,22 @@ class CWelfare:
         """
         if not (is_admin() or is_hign_level_admin()):
             return AuthorityError('无权限')
-        data = parameter_required(('costarttime', "coendtime", "cosubtration", "colimitnum"))
+        data = parameter_required(('costarttime', "coendtime", "cosubtration", "colimitnum")
+                                  if not request.json.get('delete') else('coid',))
         if data.get('codownline'):
             codownline = data.get('codownline')
         else:
             codownline = 0
         costarttime = data.get('costarttime')
         coendtime = data.get('coendtime')
-        start_time = datetime.datetime.strptime(costarttime, "%Y-%m-%d %H:%M:%S")
-        end_time = datetime.datetime.strptime(coendtime, "%Y-%m-%d %H:%M:%S")
+        if costarttime:
+            start_time = datetime.datetime.strptime(costarttime, "%Y-%m-%d %H:%M:%S")
+        else:
+            start_time = datetime.datetime.now()
+        if coendtime:
+            end_time = datetime.datetime.strptime(coendtime, "%Y-%m-%d %H:%M:%S")
+        else:
+            end_time = datetime.datetime.now()
         co_dict = {
             'COstarttime': costarttime,
             'COendtime': coendtime,
