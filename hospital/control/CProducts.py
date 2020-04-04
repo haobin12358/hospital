@@ -9,7 +9,7 @@ from hospital.extensions.success_response import Success
 from hospital.extensions.error_response import ParamsError, StatusError
 from hospital.extensions.params_validates import parameter_required
 from hospital.extensions.register_ext import db
-from hospital.models import Admin, Coupon, Products
+from hospital.models import Admin, Coupon, Products, Classes
 from hospital.config.enums import ProductStatus, ProductType, AdminStatus
 
 
@@ -64,10 +64,10 @@ class CProducts(object):
         admin = Admin.query.filter(Admin.ADid == adid, Admin.isdelete == 0,
                                    Admin.ADstatus == AdminStatus.normal.value).first_('当前管理员账号已冻结')
 
-        prid, prprice, prvipprice, prtype, prstatus, printegral, prvipintegral, prstock, prsort, prdetails = (
+        prid, prprice, prvipprice, prtype, prstatus, printegral, prvipintegral, prstock, prsort, prdetails, smnum = (
             data.get('prid'), data.get('prprice'), data.get('prvipprice'), data.get('prtype'), data.get('prstatus'),
             data.get('printegral'), data.get('prvipintegral'), data.get('prstock'), data.get('prsort'),
-            data.get('prdetails'),)
+            data.get('prdetails'), data.get('smnum'))
 
         if prprice:
             prprice = self._trans_decimal(prprice)
@@ -93,6 +93,8 @@ class CProducts(object):
             prstock = self._check_int(prstock, '商品库存')
         if prsort:
             prsort = self._check_int(prsort, '商品排序')
+        if smnum:
+            smnum = self._check_int(smnum, '课时数')
         if prdetails:
             if not isinstance(prdetails, list):
                 raise ParamsError('prdetails 格式不对')
@@ -133,6 +135,8 @@ class CProducts(object):
                         update_dict['PRstock'] = prstock
                     if prsort:
                         update_dict['PRsort'] = prsort
+                    if smnum:
+                        update_dict['SMnum'] = smnum
 
                     product.update(update_dict)
                     current_app.logger.info('更新商品信息 {}'.format(prid))
@@ -156,9 +160,11 @@ class CProducts(object):
                 'PRvipIntegral': prvipintegral,
                 'PRstock': prstock,
                 'COid': data.get('coid'),
+                'CLid': data.get('clid'),
                 'PRdetails': data.get('prdetails'),
                 'PRdesc': data.get('prdesc'),
-                'PRsort': prsort
+                'PRsort': prsort,
+                'SMnum': smnum,
             })
 
             current_app.logger.info('{} 创建商品 {}'.format(admin.ADid, data.get('prtitle')))
@@ -205,7 +211,9 @@ class CProducts(object):
 
     def _fill_coupon(self, product):
         if product.COid and product.PRtype == ProductType.coupon.value:
-            coupon = Coupon.query.filter(Coupon.COid == product.COid, Coupon.isdelete == 0).first_('优惠券已失效')
+            coupon = Coupon.query.filter(Coupon.COid == product.COid, Coupon.isdelete == 0).first()
+            if not coupon:
+                return
             if coupon.COdownline == 0:
                 coupon.fill("codownline_zh", "无限制")
             else:
@@ -213,3 +221,9 @@ class CProducts(object):
             coupon.fill("cotime", "{0}月{1}日-{2}月{3}日".format(
                 coupon.COstarttime.month, coupon.COstarttime.day, coupon.COendtime.month, coupon.COendtime.day))
             product.fill('coupon', coupon)
+
+        if product.CLid and product.PRtype == ProductType.package.value:
+            classes = Classes.query.filter(Classes.CLid == product.CLid, Classes.isdelete == 0).first()
+            if not classes:
+                return
+            product.fill('classes', classes)
