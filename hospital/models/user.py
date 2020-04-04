@@ -22,6 +22,11 @@ class User(Base):
     UStelphone = Column(String(16), comment="手机号")
     UScardid = Column(String(32), comment="身份证号")
 
+    @orm.reconstructor
+    def __init__(self):
+        super(User, self).__init__()
+        self.hide('USopenid', 'USunionid')
+
 
 class Family(Base):
     """家人"""

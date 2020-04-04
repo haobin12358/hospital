@@ -18,6 +18,7 @@ class AUser(Resource):
             'list_roles': self.cuser.list_roles,
             'list_family': self.cuser.list_family,
             'family': self.cuser.family,
+            'list': self.cuser.list_user,
         }
         return apis
 
