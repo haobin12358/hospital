@@ -64,6 +64,7 @@ class SubscribeStatus(Enum):
 
 
 class ActivityStatus(Enum):
+    close = -10, '已关闭'
     ready = 0, '未开始'
     over = 10, '已结束'
 
