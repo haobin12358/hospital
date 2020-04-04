@@ -1,7 +1,7 @@
 """
 本文件用于处理用户相关操作
 create user: wiilz
-last update time:2020/3/26 18:17
+last update time:2020/04/05 00:28
 """
 import re
 import os
@@ -16,10 +16,11 @@ from hospital.common.default_head import GithubAvatarGenerator
 from hospital.common.identifying_code import SendSMS
 from hospital.config.enums import FamilyRole, FamilyType, Gender
 from hospital.config.secret import MiniProgramAppId, MiniProgramAppSecret
-from hospital.extensions.error_response import WXLoginError, ParamsError, NotFound, DumpliError, StatusError
-from hospital.extensions.interface.user_interface import token_required
-from hospital.extensions.params_validates import parameter_required, validate_chinese
-from hospital.extensions.register_ext import db
+from hospital.extensions.error_response import WXLoginError, ParamsError, NotFound, DumpliError, StatusError, \
+    AuthorityError
+from hospital.extensions.interface.user_interface import token_required, is_user, is_admin, admin_required
+from hospital.extensions.params_validates import parameter_required, validate_chinese, validate_arg
+from hospital.extensions.register_ext import db, ali_oss
 from hospital.extensions.success_response import Success
 from hospital.extensions.token_handler import usid_to_token
 from hospital.extensions.weixin import WeixinLogin
@@ -46,7 +47,7 @@ class CUser(object):
 
         user = User.query.filter(User.isdelete == false(), User.USopenid == openid).first()
         head = self._get_local_head(userinfo.get("avatarUrl"), openid)
-        sex = userinfo.get('gender', 0)
+        sex = userinfo.get('gender', 0) if userinfo.get('gender') else Gender.woman.value
 
         with db.auto_commit():
             if user:
@@ -71,7 +72,7 @@ class CUser(object):
         token = usid_to_token(user.USid, level=user.USlevel, username=user.USname)
         data = {'token': token,
                 'usname': user.USname,
-                'usavatar': user.USavatar,
+                'usavatar': user['USavatar'],
                 'uslevel': user.USlevel,
                 'usbalance': 0,  # todo 对接会员卡账户
                 }
@@ -127,6 +128,11 @@ class CUser(object):
         filename = os.path.join(filepath, filename)
         with open(filename, 'wb') as head:
             head.write(data.content)
+        # 头像上传到阿里oss
+        try:
+            ali_oss.save(data=filename, filename=filedbname[1:])
+        except Exception as e:
+            current_app.logger.error('头像转存七牛云出错 : {}'.format(e))
         return filedbname
 
     @staticmethod
@@ -291,11 +297,46 @@ class CUser(object):
     @token_required
     def info(self):
         """用户详情"""
-        user = User.query.filter(User.isdelete == false(),
-                                 User.USid == getattr(request, 'user').id).first_('未找到该用户信息')
-        user.fields = ['USname', 'USavatar', 'USgender', 'USlevel', 'UStelphone']
-        user.fill('usbalance', 0)  # todo 对接会员卡/后台查看
+        if is_user():
+            user = User.query.filter(User.isdelete == false(),
+                                     User.USid == getattr(request, 'user').id).first_('未找到该用户信息')
+            user.fields = ['USname', 'USavatar', 'USgender', 'USlevel', 'UStelphone', 'USintegral']
+            user.fill('usgender_zh', Gender(user.USgender).zh_value)
+            user.fill('usbalance', 0)  # todo 对接会员卡
+            user.UStelphone = str(user.UStelphone)[:3] + '****' + str(user.UStelphone)[7:]
+        else:
+            if not is_admin():
+                raise AuthorityError
+            args = parameter_required(('usid',))
+            user = User.query.filter(User.isdelete == false(), User.USid == args.get('usid')).first_('未找到该用户信息')
+            self._fill_user(user)
+            user.fill('usbalance', 0)  # todo 对接会员卡
         return Success(data=user)
+
+    @staticmethod
+    def _fill_user(user):
+        user.fill('usgender_zh', Gender(user.USgender).zh_value)
+        familys = Family.query.filter(Family.isdelete == false(),
+                                      Family.USid == user.USid).order_by(Family.FAtype.asc()).all()
+        for family in familys:
+            family.hide('FArole', 'USid', 'FAself', 'AAid')
+            family.fill('fagender_zh', Gender(family.FAgender).zh_value)
+            family.fill('fatype_zh', FamilyType(family.FAtype).zh_value)
+        user.fill('family', familys)
+
+    @admin_required
+    def list_user(self):
+        args = parameter_required(('page_num', 'page_size'))
+        uslevel = args.get('uslevel')
+        us_query = User.query.filter(User.isdelete == false())
+        if uslevel:
+            validate_arg(r'^[0-4]$', str(uslevel), '参数错误: uslevel')
+            us_query = us_query.filter(User.USlevel == uslevel)
+        user_list = us_query.order_by(User.createtime.desc()).all_with_page()
+        for user in user_list:
+            user.fill('usgender_zh', Gender(user.USgender).zh_value)
+            user.fill('usbalance', 0)  # todo 对接会员卡
+        return Success(data=user_list)
 
     @token_required
     def list_roles(self):
@@ -320,7 +361,10 @@ class CUser(object):
             fa.fill('fagender_zh', Gender(fa.FAgender).zh_value)
             fa.fill('fatype_zh', FamilyType(fa.FAtype).zh_value)
             fa.fill('farole_zh', FamilyRole(fa.FArole).zh_value)
-
+            if fa.FAtel:
+                fa.FAtel = str(fa.FAtel)[:3] + '****' + str(fa.FAtel)[7:]
+            if fa.FAidentification:
+                fa.FAidentification = str(fa.FAidentification)[:10] + '*' * 6 + str(fa.FAidentification)[16:]
         return Success(data=family_list)
 
     @token_required
