@@ -77,7 +77,7 @@ class UserActivityStatus(Enum):
 
 class ApplyStatus(Enum):
     reject = -10, '未通过'
-    waiting = 0, '审核中'
+    waiting = 0, '待审核'
     passed = 10, '已通过'
 
 

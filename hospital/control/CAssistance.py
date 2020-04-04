@@ -7,14 +7,14 @@ import uuid
 import json
 from sqlalchemy import false
 from flask import current_app, request
-from hospital.config.enums import FamilyType, ApplyStatus, AssistancePictureType, ApproveAction
+from hospital.config.enums import FamilyType, ApplyStatus, AssistancePictureType, ApproveAction, Gender
 from hospital.control.CUser import CUser
-from hospital.extensions.error_response import ParamsError, DumpliError
-from hospital.extensions.interface.user_interface import token_required, is_user, admin_required
+from hospital.extensions.error_response import ParamsError, DumpliError, AuthorityError
+from hospital.extensions.interface.user_interface import token_required, is_user, admin_required, is_admin
 from hospital.extensions.params_validates import parameter_required, validate_chinese, validate_arg, validate_datetime
 from hospital.extensions.register_ext import db
 from hospital.extensions.success_response import Success
-from hospital.models import AssistanceRelatives, Assistance, AssistancePicture
+from hospital.models import AssistanceRelatives, Assistance, AssistancePicture, User
 
 
 class CAssistance(object):
@@ -70,7 +70,7 @@ class CAssistance(object):
 
     @token_required
     def get_assistance(self):
-        if is_user:
+        if is_user():
             usid = getattr(request, 'user').id
             assistance = Assistance.query.filter(Assistance.isdelete == false(), Assistance.USid == usid
                                                  ).order_by(Assistance.createtime.desc()).first()
@@ -81,13 +81,60 @@ class CAssistance(object):
                 res['atstatus_zh'] = ApplyStatus(assistance.ATstatus).zh_value
                 res['can_submit'] = False if assistance.ATstatus == ApplyStatus.waiting.value else True
             return Success(data=res)
-        else:  # todo 管理员查看
-            pass
+        else:
+            if not is_admin():
+                raise AuthorityError
+            args = parameter_required('atid')
+            assistance = Assistance.query.filter(Assistance.isdelete == false(),
+                                                 Assistance.ATid == args.get('atid')).first_('未找到申请信息')
+            self._fill_assistance(assistance)
 
-    @token_required
+            # 添加证明图片
+            dia_pics, pove_pics = [], []
+            as_pics = AssistancePicture.query.filter(AssistancePicture.isdelete == false(),
+                                                     AssistancePicture.ATid == assistance.ATid
+                                                     ).order_by(AssistancePicture.createtime.asc()).all()
+            [dia_pics.append(pic) if pic.APtype == AssistancePictureType.diagnosis.value else pove_pics.append(pic) for
+             pic in as_pics]
+            assistance.fill('diagnosis', dia_pics)
+            assistance.fill('poverty', pove_pics)
+            # 添加亲属信息
+            relatives_list = []
+            for arid in json.loads(assistance.ARids):
+                relative = self._exist_assistance_relative([AssistanceRelatives.ARid == arid, ])
+                if not relative:
+                    current_app.logger.error('arid not found: {}'.format(arid))
+                    continue
+                relative.fill('artype_zh', FamilyType(relative.ARtype).zh_value)
+                relatives_list.append(relative)
+            assistance.fill('relatives', relatives_list)
+            return Success(data=assistance)
+
+    @staticmethod
+    def _fill_assistance(assistance):
+        assistance.fill('atstatus_zh', ApplyStatus(assistance.ATstatus).zh_value)  # 审核状态
+        assistance.fill('atgender_zh', Gender(assistance.ATgender).zh_value)  # 性别
+        apply_user = User.query.filter(User.isdelete == false(), User.USid == assistance.USid).first()
+        # 添加申请人账号信息
+        assistance.fill('user_info', {'usname': apply_user.USname,
+                                      'usavatar': apply_user['USavatar']} if apply_user else None)
+
+    @admin_required
     def list_assistance(self):
         """管理员获取申请列表"""
-        pass
+        args = parameter_required(('page_num', 'page_size'))
+        as_query = Assistance.query.filter(Assistance.isdelete == false())
+        atstatus = args.get('atstatus')
+        if atstatus:
+            try:
+                atstatus = int(atstatus)
+                ApplyStatus(atstatus)
+            except ValueError:
+                raise ParamsError('atstatus 参数错误')
+            as_query = as_query.filter(Assistance.ATstatus == atstatus)
+        assistance_list = as_query.order_by(Assistance.createtime.desc()).all_with_page()
+        [self._fill_assistance(assistance) for assistance in assistance_list]
+        return Success(data=assistance_list)
 
     @admin_required
     def approve(self):

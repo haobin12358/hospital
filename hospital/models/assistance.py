@@ -30,6 +30,11 @@ class Assistance(Base):
     Reviewer = Column(String(64), comment='审核人id')
     RejectReason = Column(String(255), comment='拒绝原因')
 
+    @orm.reconstructor
+    def __init__(self):
+        super(Assistance, self).__init__()
+        self.hide('USid', 'ARids', 'Reviewer', 'RejectReason')
+
 
 class AssistancePicture(Base):
     """证明图片"""

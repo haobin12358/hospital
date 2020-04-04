@@ -13,6 +13,7 @@ class AAssistance(Resource):
             'relatives': self.cassistance.relatives,
             'relatives_type': self.cassistance.relatives_type,
             'get': self.cassistance.get_assistance,
+            'list': self.cassistance.list_assistance,
 
         }
         return apis
