@@ -52,7 +52,7 @@ class CDepartment(object):
             # syid = symptom_dict.get('syid')
             symptom = Symptom.query.filter(
                 Symptom.DEid == dep.DEid, Symptom.SYname == syname,
-                                           Symptom.isdelete == 0).first()
+                Symptom.isdelete == 0).first()
             if symptom:
                 symptom.SYsort = sysort
                 # db.session.add(symptom)
