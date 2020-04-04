@@ -22,6 +22,8 @@ class Products(Base):
     PRdetails = Column(Text, url_list=True, comment='商品详情图')
     PRdesc = Column(Text, comment='兑换描述')
     PRsort = Column(Integer, default=0, comment='排序')
+    CLid = Column(String(64), comment='课程ID')
+    SMnum = Column(Integer, default=0, comment='课时数')
 
     @orm.reconstructor
     def __init__(self):
