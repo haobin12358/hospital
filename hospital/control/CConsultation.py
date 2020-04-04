@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
-from datetime import datetime, date
-
-from flask import current_app, request
 import uuid
-
+from datetime import datetime, date
+from flask import current_app, request
 from sqlalchemy import cast, Date, func
 
 from hospital.config.timeformat import format_for_web_second, format_forweb_no_HMS
@@ -28,7 +26,7 @@ class CConsultation(CDoctor):
         doid = data.get('doid')
         condate = data.get('condate')
 
-        filter_args = [Consultation.isdelete == 0,]
+        filter_args = [Consultation.isdelete == 0, ]
         if is_doctor():
             doid = getattr(request, 'user').id
 
