@@ -11,3 +11,4 @@ from .activity import *
 from .review import *
 from .consultation import *
 from .coupon import *
+from .products import *
