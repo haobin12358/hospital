@@ -30,9 +30,14 @@ class CClasses:
         """
         if not (is_admin() or is_hign_level_admin()):
             return AuthorityError('无权限')
-        data = parameter_required(('clname', "clpicture", "deid", "clintroduction", "clprice"))
+        data = parameter_required(('clname', "clpicture", "deid", "clintroduction", "clprice")
+                                  if not request.json.get('delete') else('clid',))
         clid = data.get('clid')
-        department = Departments.query.filter(Departments.DEid == data.get("deid")).first_("未找到科室信息")
+        if clid:
+            classes = Classes.query.filter(Classes.CLid == clid).first_("未找到课程信息")
+            department = Departments.query.filter(Departments.DEid == classes.DEid).first_("未找到科室信息")
+        else:
+            department = Departments.query.filter(Departments.DEid == data.get("deid")).first_("未找到科室信息")
         cl_dict = {'CLname': data.get('clname'),
                    'CLpicture': data.get('clpicture'),
                    'DEid': data.get('deid'),
@@ -338,9 +343,15 @@ class CClasses:
         """
         if not (is_admin() or is_hign_level_admin()):
             return AuthorityError('无权限')
-        data = parameter_required(('clid', 'smnum', 'smprice'))
+        data = parameter_required(('clid', 'smnum', 'smprice') if not request.json.get('delete') else('smid',))
         smid = data.get('smid')
-        classes = Classes.query.filter(Classes.isdelete == 0, Classes.CLid == data.get('clid')).first_("未找到该课程信息")
+        if smid:
+            setmeal = Setmeal.query.filter(Setmeal.SMid == smid).first_("未找到该套餐信息")
+            classes = Classes.query.filter(Classes.isdelete == 0,
+                                           Classes.CLid == setmeal.CLid).first_("未找到该课程信息")
+        else:
+            classes = Classes.query.filter(Classes.isdelete == 0,
+                                           Classes.CLid == data.get('clid')).first_("未找到该课程信息")
         clname = classes["CLname"]
         sm_dict = {
             "CLid": data.get('clid'),
@@ -414,7 +425,6 @@ class CClasses:
             filter_args.append(Subscribe.COstarttime.date() ==
                                datetime.datetime.strptime(args.get('codate'), "%Y-%m-%d").date())
         subcribe_list = Subscribe.query.filter(*filter_args).order_by(Subscribe.createtime).all_with_page()
-        print(subcribe_list)
         for subcribe in subcribe_list:
             subcribe.fill("sustatus_zh", SubscribeStatus(int(subcribe["SUstatus"])).zh_value)
             coid = subcribe["COid"]

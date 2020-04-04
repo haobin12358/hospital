@@ -10,11 +10,11 @@ from flask import current_app, request
 from hospital.config.enums import ActivityStatus, UserActivityStatus
 from hospital.config.timeformat import format_for_web_second
 from hospital.extensions.error_response import ParamsError, StatusError, TokenError
-from hospital.extensions.interface.user_interface import is_user, admin_required, is_anonymous, token_required, is_admin
+from hospital.extensions.interface.user_interface import is_user, admin_required, is_anonymous, is_admin
 from hospital.extensions.params_validates import parameter_required, validate_datetime
-from hospital.extensions.register_ext import db, conn, celery
+from hospital.extensions.register_ext import db
 from hospital.extensions.success_response import Success
-from hospital.extensions.tasks import change_activity_status
+from hospital.extensions.tasks import change_activity_status, add_async_task, cancel_async_task
 from hospital.models import Activity, UserActivity, User
 
 
@@ -53,29 +53,26 @@ class CActivity(object):
                 ac_dict['ACstatus'] = ActivityStatus.ready.value
                 activity = Activity.create(ac_dict)
                 msg = '添加成功'
-                # 异步任务
-                task_id = change_activity_status.apply_async(args=(ac_dict['ACid'],),
-                                                             eta=acstarttime - timedelta(hours=8))
-                connid = 'start_activity{}'.format(ac_dict['ACid'])
-                current_app.logger.info('activity async task | connid: {}, task_id: {}'.format(connid, task_id))
-                conn.set(connid, str(task_id))
+                # 添加异步任务
+                add_async_task(func=change_activity_status, start_time=acstarttime,
+                               func_args=(ac_dict['ACid'],), conn_id='start_activity{}'.format(ac_dict['ACid']))
             else:
                 activity = Activity.query.filter(Activity.isdelete == false(),
                                                  Activity.ACid == acid).first_('活动不存在')
                 self._can_activity_edit(activity)
+                # 取消已有的异步任务
+                cancel_async_task(conn_id='start_activity{}'.format(activity.ACid))
                 if data.get('delete'):
                     activity.update({'isdelete': True})
                     msg = '删除成功'
+                elif data.get('close'):
+                    activity.update({'ACstatus': ActivityStatus.close.value})
+                    msg = '活动关闭成功'
                 else:
-                    # 编辑后更新异步任务
-                    conid = 'start_activity{}'.format(activity.ACid)
-                    exist_task_id = conn.get(conid)
-                    if exist_task_id:
-                        exist_task_id = str(exist_task_id, encoding='utf-8')
-                        current_app.logger.info('已有任务id: {}'.format(exist_task_id))
-                        celery.AsyncResult(exist_task_id).revoke()
-                        conn.delete(conid)
                     parameter_required(required_dict, datafrom=data)
+                    # 重新添加异步任务
+                    add_async_task(func=change_activity_status, start_time=acstarttime,
+                                   func_args=(activity.ACid,), conn_id='start_activity{}'.format(activity.ACid))
                     activity.update(ac_dict)
                     msg = '更新成功'
             db.session.add(activity)
@@ -87,7 +84,7 @@ class CActivity(object):
         if self._ua_filter([UserActivity.ACid == activity.ACid,
                             UserActivity.UAstatus == UserActivityStatus.ready.value],
                            ).first():
-            raise StatusError('活动已有报名人员，咱不能进行编辑')
+            raise StatusError('活动已有报名人员，暂不能进行编辑')
 
     def list_activity(self):
         """首页活动展示 / 我的活动"""
@@ -128,6 +125,7 @@ class CActivity(object):
                 current_app.logger.error('activity not found: acid:{}'.format(ua.ACid))
                 continue
             activity.fields = ['ACid', 'ACname', 'ACbanner']
+            activity.fill('uastatus', ua.UAstatus)
             activity.fill('uastatus_zh', UserActivityStatus(ua.UAstatus).zh_value)
             activity.fill('uaid', ua.UAid)
             ac_list.append(activity)
@@ -147,6 +145,10 @@ class CActivity(object):
                                          Activity.ACid == acid).first_('未找到活动信息')
         if not is_admin():
             activity.hide('ACnumber')
+        if is_user():
+            activity.fill('signed_up', bool(self._ua_filter([UserActivity.ACid == acid,
+                                                             UserActivity.USid == getattr(request, 'user').id
+                                                             ]).first()))  # 是否已报名
         activity.fill('acstatus_zh', ActivityStatus(activity.ACstatus).zh_value)
         activity.fill('remain_people', self._query_activity_remain_people(activity))
         return Success(data=activity)

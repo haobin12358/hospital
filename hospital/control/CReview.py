@@ -1,17 +1,16 @@
 """
 本文件用于处理评论逻辑处理
 create user: haobin12358
-last update time:2020/4/2 1:50
+last update time:2020/4/4 18:55
 """
 import uuid
 import datetime
 from decimal import Decimal
 from flask import request, current_app
-from hospital.extensions.interface.user_interface import admin_required
+from hospital.extensions.interface.user_interface import admin_required, token_required
 from hospital.extensions.register_ext import db
 from hospital.extensions.interface.user_interface import is_doctor, is_hign_level_admin, is_admin
 from hospital.extensions.success_response import Success
-from hospital.extensions.request_handler import token_to_user_
 from hospital.extensions.params_validates import parameter_required
 from hospital.extensions.error_response import ParamsError, AuthorityError, StatusError
 from hospital.models.departments import Doctor
@@ -28,8 +27,8 @@ class CReview:
     def get_review(self):
         """获取评论"""
         """案例404id/医生id/活动id403/视频id405/评价人名称==>rvtype+rvtypeid/usname/doid"""
-        args = parameter_required(('token', ))
-        user = token_to_user_(request.args.to_dict()["token"])
+        args = parameter_required(('token',))
+        user = request.user
         if user.model == "Doctor":
             return AuthorityError()
         filter_args = [Review.isdelete == 0]
@@ -52,13 +51,13 @@ class CReview:
 
         return Success(message="获取评论成功", data=review_list)
 
+    @token_required
     def set_review(self):
         """
         创建评论
         """
         data = parameter_required(("rvcontent", "rvtype", "rvtypeid", "rvnum"))
-        user = token_to_user_(request.args.to_dict()["token"])
-        usid = user.id
+        usid = request.user.id
         rvtype = int(data.get('rvtype'))
         rvtypeid = data.get('rvtypeid')
         if rvtype == 401:
@@ -98,6 +97,9 @@ class CReview:
         else:
             rppicture_list = []
         with db.auto_commit():
+            if rvtype == 403:
+                #  更改用户活动状态为已评价
+                rv_dict["RVtypeid"] = self._change_user_activity_comment_status(rvtypeid, usid)
             for repicture in rppicture_list:
                 rp_dict = {
                     "RPid": str(uuid.uuid1()),
@@ -114,7 +116,7 @@ class CReview:
 
     def delete(self):
         """删除评论"""
-        user = token_to_user_(request.args.to_dict()["token"])
+        user = request.user
         if user.model != "Admin":
             return AuthorityError()
         data = request.json
@@ -125,3 +127,17 @@ class CReview:
                 review_instance.update({"isdelete": 1})
                 db.session.add(review_instance)
         return Success('删除成功')
+
+    @staticmethod
+    def _change_user_activity_comment_status(uaid, usid):
+        """更改用户活动状态为已评价"""
+        from hospital.models.activity import UserActivity
+        from hospital.config.enums import UserActivityStatus
+        ua = UserActivity.query.filter(UserActivity.isdelete == 0,
+                                       UserActivity.UAid == uaid,
+                                       UserActivity.USid == usid).first_('评价的活动不存在')
+        if ua.UAstatus != UserActivityStatus.comment.value:
+            raise StatusError('活动非待评价状态')
+        ua.update({'UAstatus': UserActivityStatus.reviewed.value})
+        db.session.add(ua)
+        return ua.ACid
