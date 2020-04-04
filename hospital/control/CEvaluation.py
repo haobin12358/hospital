@@ -20,7 +20,7 @@ class CEvaluation:
 
     def set_evaluation(self):
         """设置问卷主体"""
-        data = parameter_required(('evname', 'evpicture', ))
+        data = parameter_required(('evname', 'evpicture', ) if not request.json.get('delete') else('evid',))
         if not (is_hign_level_admin() or is_admin()):
             return AuthorityError()
         ev_dict = {
@@ -47,7 +47,7 @@ class CEvaluation:
 
     def set_evaluationitem(self):
         """设置问卷题目"""
-        data = parameter_required(('evid', 'einame', 'eiindex', ))
+        data = parameter_required(('evid', 'einame', 'eiindex', ) if not request.json.get('delete') else('eiid', ))
         if not (is_hign_level_admin() or is_admin()):
             return AuthorityError()
         ei_dict = {
@@ -75,7 +75,7 @@ class CEvaluation:
 
     def set_evaluationanswer(self):
         """设置题目选项"""
-        data = parameter_required(('eiid', 'eaname', 'eaindex', 'eapoint'))
+        data = parameter_required(('eiid', 'eaname', 'eaindex', 'eapoint') if not request.json.get('delete') else('eaid',))
         if not (is_hign_level_admin() or is_admin()):
             return AuthorityError()
         ea_dict = {
@@ -104,7 +104,7 @@ class CEvaluation:
 
     def set_evaluationpoint(self):
         """设置分数区间"""
-        data = parameter_required(('evid', 'epstart', 'epend', 'epanswer'))
+        data = parameter_required(('evid', 'epstart', 'epend', 'epanswer') if not request.json.get('delete') else('epid',))
         if not (is_hign_level_admin() or is_admin()):
             return AuthorityError()
         epstart = Decimal(str(data.get('epstart') or 0))
@@ -117,11 +117,11 @@ class CEvaluation:
         }
         if epstart >= epend:
             return PointError("区间大小设置错误")
-        ep_list = EvaluationPoint.query.filter(EvaluationPoint.EVid == data.get('evid')).all()
-        print(ep_list)
-        for ep in ep_list:
-            if not(epstart > Decimal(str(ep["EPend"] or 0)) or epend < Decimal(str(ep["EPstart"]) or 0)):
-                return PointError()
+        if data.get('evid'):
+            ep_list = EvaluationPoint.query.filter(EvaluationPoint.EVid == data.get('evid')).all()
+            for ep in ep_list:
+                if not(epstart > Decimal(str(ep["EPend"] or 0)) or epend < Decimal(str(ep["EPstart"]) or 0)):
+                    return PointError()
         epid = data.get("epid")
         with db.auto_commit():
             if not epid:

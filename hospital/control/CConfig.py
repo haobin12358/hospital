@@ -19,8 +19,7 @@ class CConfig:
     @admin_required
     def set_banner(self):
         """banner创建/编辑/删除"""
-        print(request.data)
-        data = parameter_required(('bnpicture', "bnsort",))
+        data = parameter_required(('bnpicture', "bnsort",) if not request.json.get('delete') else('bnid', ))
         bnid = data.get('bnid')
         bn_dict = {'BNpicture': data.get('bnpicture'),
                     'BNsort': data.get('bnsort'),
@@ -158,7 +157,8 @@ class CConfig:
     @admin_required
     def set_characteristic_team(self):
         """创建/更新/删除特色科室"""
-        data = parameter_required(('ctpicture', 'ctname', 'ctposition', 'ctoffice'))
+        data = parameter_required(('ctpicture', 'ctname', 'ctposition', 'ctoffice')
+                                  if not request.json.get('delete') else('ctid', ))
         ctid = data.get('ctid')
         ct_dict = {
             'CTpicture': data.get('ctpicture'),
@@ -188,7 +188,7 @@ class CConfig:
     @admin_required
     def set_honour(self):
         """创建/更新/删除团队荣誉"""
-        data = parameter_required(('hopicture', 'hotext'))
+        data = parameter_required(('hopicture', 'hotext') if not request.json.get('delete') else('hoid',))
         hoid = data.get('hoid')
         ho_dict = {
             'HOpicture': data.get('hopicture'),
