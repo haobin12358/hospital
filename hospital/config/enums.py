@@ -117,5 +117,19 @@ class ConsultationStatus(Enum):
     # abort = 10, '中止'
 
 
+class ProductStatus(Enum):
+    usual = 0, '上架'
+    auditing = 10, '新增'
+    delete = 30, '删除'
+    sell_out = 40, '售罄'
+    off_shelves = 60, '下架'
+
+
+class ProductType(Enum):
+    product = 0, '正常商品'
+    coupon = 1, '优惠券'
+    package = 2, '套餐'
+
+
 if __name__ == '__main__':
     print(CourseStatus(101).zh_value)

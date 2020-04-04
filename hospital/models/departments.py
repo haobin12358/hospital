@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-import datetime
-from sqlalchemy import Integer, String, Text, Boolean, DateTime, DECIMAL, orm
-from sqlalchemy.dialects.mysql import LONGTEXT
-
+from sqlalchemy import Integer, String, Text, DateTime, orm
 from hospital.extensions.base_model import Base, Column
 
 
@@ -30,6 +27,7 @@ class Symptom(Base):
     SYname = Column(String(255), nullable=False, comment='症状名')
     SYsort = Column(Integer, default=0, comment='症状排序')
     DEid = Column(String(64), comment='科室id')
+
     @orm.reconstructor
     def __init__(self):
         super(Symptom, self).__init__()
