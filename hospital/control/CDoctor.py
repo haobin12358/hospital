@@ -65,11 +65,10 @@ class CDoctor(object):
         for doctor in doctors:
             self._fill_department(doctor)
             self._fill_doctor_mainpic(doctor)
-            if index == 'dep':
-                doctor.add('DOskilledIn')
+            doctor.add('DOskilledIn')
+
             if index == 'doname':
                 # todo 好评率 接诊次数
-                doctor.add('DOskilledIn')
                 doctor.fill('favorablerate', '100%')
                 doctor.fill('treatnum', '0')
             if index == 'back':
