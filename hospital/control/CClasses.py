@@ -93,7 +93,7 @@ class CClasses:
                     doctor = doctor_dict
                     doctor_media = DoctorMedia.query.filter(DoctorMedia.isdelete == 0, DoctorMedia.DMtype == 0,
                                                             DoctorMedia.DOid == doid).first()
-                    doctor.fill("dmmedia", doctor_media["DMmedia"]) # 医生主图
+                    doctor.fill("doctormainpic", doctor_media["DMmedia"]) # 医生主图
                     department = Departments.query.filter(Departments.isdelete == 0,
                                                           Departments.DEid == doctor["DEid"])\
                         .first_("未找到科室信息")
@@ -101,9 +101,9 @@ class CClasses:
                     review_good = Review.query.filter(Review.isdelete == 0, Review.RVnum >= 4, Review.DOid == doid).all()
                     review = Review.query.filter(Review.isdelete == 0, Review.DOid == doid).all()
                     review_percentage = Decimal(str(int(len(review_good) / len(review) or 0)))
-                    doctor.fill("review_percentage", "{0}%".format(review_percentage * 100)) # 好评率
+                    doctor.fill("favorablerate", "{0}%".format(review_percentage * 100)) # 好评率
                     register = Register.query.filter(Register.DOid == doid, Register.isdelete == 0).all()
-                    doctor.fill("registernum", len(register)) # 接诊次数
+                    doctor.fill("treatnum", len(register)) # 接诊次数
                     doctor_list2.append(doctor)
                 classes.fill("doctor_list", doctor_list2)
         return Success(message="获取课程信息成功", data=classes)
@@ -151,7 +151,7 @@ class CClasses:
                 subscribe = Subscribe.query.filter(Subscribe.COid == coid).all()
                 if subscribe:
                     return AuthorityError("已有人报名，不可修改")
-                co_instance = Classes.query.filter_by_(COid=coid).first_('未找到该课程排班信息')
+                co_instance = Course.query.filter(Course.COid == coid).first_('未找到该课程排班信息')
 
                 co_instance.update(co_dict, null='not')
                 msg = '编辑成功'
@@ -190,7 +190,7 @@ class CClasses:
             if request.args.get('doid'):
                 filter_args.append(Course.DOid == request.args.get('doid'))
             else:
-                filter_args.append(Course.DOid == token_to_user_(request.args.token).id)
+                filter_args.append(Course.DOid == token_to_user_(request.args.get('token')).id)
         if request.args.get('clname'):
             filter_args.append(Course.CLname == request.args.get('clname'))
         if request.args.get('costatus'):
