@@ -283,12 +283,16 @@ class CConfig:
         user = token_to_user_(args.get('token'))
         if user.model == "User":
             filter_args.append(UserIntegral.USid == user.id)
+            filter_args.append(UserIntegral.UItrue == 1)
         else:
             if not (is_admin() or is_hign_level_admin()):
                 return AuthorityError()
             if args.get('usid'):
                 filter_args.append(UserIntegral.USid == args.get('usid'))
         userIntegral = UserIntegral.query.filter(*filter_args).order_by(UserIntegral.createtime.desc()).all_with_page()
+        for user_item in userIntegral:
+            user = User.query.filter(User.USid == user_item.USid).first()
+            user_item.fill('usname', user.USname)
         return Success(message="获取积分变动成功", data=userIntegral)
 
     def _judge_point(self, pttype, uitype, usid, uiintegral=None):
