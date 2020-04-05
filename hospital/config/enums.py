@@ -131,5 +131,18 @@ class ProductType(Enum):
     package = 2, '套餐'
 
 
+class OrderMainStatus(Enum):
+    wait_pay = 0, '待支付'
+    ready = 30, '已完成'
+    cancle = -40, '已取消'
+
+
+class OrderPayType(Enum):
+    wx = 0, '微信'
+    mix = 5, '组合支付'
+    integral = 10, '积分'
+
+
+
 if __name__ == '__main__':
     print(CourseStatus(101).zh_value)

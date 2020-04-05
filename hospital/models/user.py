@@ -80,3 +80,8 @@ class IdentifyingCode(Base):
     ICid = Column(String(64), primary_key=True)
     ICtelphone = Column(String(14), nullable=False)  # 获取验证码的手机号
     ICcode = Column(String(8), nullable=False)  # 获取到的验证码
+
+
+
+class UserHour(Base):
+    """用户购买的课时"""
