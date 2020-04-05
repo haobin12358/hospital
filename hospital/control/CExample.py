@@ -29,7 +29,9 @@ class CExample(object):
     def list(self):
         data = parameter_required()
         syid = data.get('syid')
-        examples_sql = Example.query.filter(Example.isdelete == 0)
+        index = data.get('index', 'list')
+        examples_sql = Example.query.join(Symptom, Symptom.SYid == Example.SYid).filter(
+            Example.isdelete == 0, Symptom.isdelete == 0)
         if syid:
             examples_sql.filter(Example.SYid == syid)
         else:
@@ -37,7 +39,7 @@ class CExample(object):
                 raise AuthorityError()
         examples = examples_sql.order_by(Example.EXsort.asc(), Example.createtime.desc()).all_with_page()
         for exm in examples:
-            self._fill_example(exm)
+            self._fill_example(exm, index)
 
         return Success('获取成功', data=examples)
 
