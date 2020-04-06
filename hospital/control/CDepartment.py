@@ -36,7 +36,7 @@ class CDepartment(object):
                 DoctorMedia.DMtype == DoctorMetiaType.mainpic.value,
                 DoctorMedia.isdelete == 0).first()
             if dmmain:
-                do.fill('doctormainpic', dmmain.DMmedia)
+                do.fill('doctormainpic', dmmain['DMmedia'])
             else:
                 do.fill('doctormainpic', '')
         dep.fill('doctors', dos)
