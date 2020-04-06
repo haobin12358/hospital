@@ -378,8 +378,10 @@ class COrder(object):
         decimal_omnum = Decimal(omnum)
         if smid != '1':
             sm = Setmeal.query.filter(Setmeal.SMid == smid, Setmeal.isdelete == 0).first_('课时套餐已下架')
-            trueunit = sm.SMprice
-            mount = truemount = (Decimal(trueunit) if trueunit else Decimal(0)) * decimal_omnum
+            # trueunit = sm.SMprice
+            trueunit = (Decimal(sm.SMprice) if sm.SMprice else Decimal(0))
+
+            mount = truemount = trueunit * decimal_omnum
             if uc:
                 if uc.COdownline and truemount >= Decimal(uc.COdownline):
                     # 优惠后价格
@@ -412,7 +414,7 @@ class COrder(object):
                 'CLid': clid,
                 'CLname': sm.CLname,
                 'SMnum': sm.SMnum,
-                'SMprice': sm.SMprice
+                'SMprice': trueunit
             })
             db.session.add(ordermain)
             return sm.CLnamem, truemount
