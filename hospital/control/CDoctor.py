@@ -65,11 +65,10 @@ class CDoctor(object):
         for doctor in doctors:
             self._fill_department(doctor)
             self._fill_doctor_mainpic(doctor)
-            if index == 'dep':
-                doctor.add('DOskilledIn')
+            doctor.add('DOskilledIn')
+
             if index == 'doname':
                 # todo 好评率 接诊次数
-                doctor.add('DOskilledIn')
                 doctor.fill('favorablerate', '100%')
                 doctor.fill('treatnum', '0')
             if index == 'back':
@@ -179,7 +178,7 @@ class CDoctor(object):
             DoctorMedia.DMtype == DoctorMetiaType.mainpic.value,
             DoctorMedia.isdelete == 0).first()
         if dmmain:
-            doctor.fill('doctormainpic', dmmain.DMmedia)
+            doctor.fill('doctormainpic', dmmain['DMmedia'])
         else:
             doctor.fill('doctormainpic', '')
 
@@ -189,7 +188,7 @@ class CDoctor(object):
             DoctorMedia.DMtype == DoctorMetiaType.listpic.value,
             DoctorMedia.isdelete == 0).order_by(
             DoctorMedia.DMsort.desc(), DoctorMedia.createtime.desc()).all()
-        dm_fill_list = [dm.DMmedia for dm in dmlist]
+        dm_fill_list = [dm['DMmedia'] for dm in dmlist]
         doctor.fill('doctorlistpic', dm_fill_list)
 
     def _fill_doctor_qrpic(self, doctor):
@@ -198,7 +197,7 @@ class CDoctor(object):
             DoctorMedia.DMtype == DoctorMetiaType.qrpic.value,
             DoctorMedia.isdelete == 0).first()
         if dmqrpic:
-            doctor.fill('doctorqrpic', dmqrpic.DMmedia)
+            doctor.fill('doctorqrpic', dmqrpic['DMmedia'])
         else:
             doctor.fill('doctorqrpic', '')
 
