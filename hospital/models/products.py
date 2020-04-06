@@ -49,14 +49,24 @@ class OrderMain(Base):
     OMrecvAddress = Column(Text, nullable=False, comment='地址')
     OMintegralpayed = Column(Integer, comment='组合支付时，实际支付的积分')
     OMintegral = Column(Integer, comment='组合支付时积分数')
+    UCid = Column(String(64), comment='优惠券ID')
+    OMnum = Column(Integer, default=1, comment='数量')
+    OMtype = Column(Integer, default=0, comment='订单类型 0 积分商城商品订单 2 课时套餐订单')
+
+    # 课时套餐 数据记录
+    SMid = Column(String(64), comment='课时套餐ID')
+    CLid = Column(String(64), comment="课程id")
+    CLname = Column(String(128), comment="课程名称")
+    SMnum = Column(Integer, nullable=False, comment="课时数")
+    SMprice = Column(DECIMAL(scale=2), comment="套餐价格")
 
     PRid = Column(String(64), nullable=False, comment='商品id')
     PRprice = Column(DECIMAL(precision=28, scale=2), nullable=False, comment='单价')
-    PRtitle = Column(String(255), nullable=False, comment='商品标题')
-    PRmedia = Column(String(255), nullable=False, comment='主图', url=True)
+    PRtitle = Column(String(255), comment='商品标题')
+    PRmedia = Column(String(255), comment='主图', url=True)
     PRcontent = Column(Text, comment='关联优惠券/课程的信息')
-    OMnum = Column(Integer, default=1, comment='数量')
-    UCid = Column(String(64), comment='优惠券ID')
+
+
 
 
 class OrderPay(Base):

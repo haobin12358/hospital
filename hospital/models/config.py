@@ -74,7 +74,7 @@ class PointTask(Base):
     PTid = Column(String(64), primary_key=True, comment="任务id")
     PTname = Column(String(255), comment="任务内容")
     PTtype = Column(Integer, comment="701登录702邀请新用户703完善个人信息704完善家人信息705购买会员"
-                                     "706充值707看视频708挂号709评论710积分购物711报名活动712公益援助713健康测评")
+                                     "706充值707看视频708挂号709评论710积分购物711报名活动712公益援助713健康测评714积分退还")
     PTnumber = Column(Integer, comment="积分数")
     PTtime = Column(Integer, comment="限制次数， -表示限制次数+表示每日次数")
     PTicon = Column(Text, url=True, comment="icon")
