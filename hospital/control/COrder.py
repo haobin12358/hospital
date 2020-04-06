@@ -10,7 +10,7 @@ import uuid
 
 from sqlalchemy import or_
 
-from hospital import JSONEncoder
+from hospital.extensions.base_jsonencoder import JSONEncoder
 from hospital.extensions.interface.user_interface import admin_required, token_required
 from hospital.extensions.success_response import Success
 from hospital.extensions.error_response import ParamsError, StatusError
