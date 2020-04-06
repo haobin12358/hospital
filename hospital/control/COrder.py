@@ -185,7 +185,7 @@ class COrder(object):
                     'UIid': str(uuid.uuid1()),
                     'USid': user.USid,
                     'UIintegral': ordermain.OMintegralpayed,
-                    'UIaction': 715,  # todo 修改为enum
+                    'UIaction': 714,  # todo 修改为enum
                     'UItype': 3,
                     'UItrue': 1,
                 }))
