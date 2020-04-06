@@ -2,9 +2,9 @@
 from flask import current_app
 from sqlalchemy import false
 from datetime import timedelta
-from hospital.config.enums import ActivityStatus, UserActivityStatus
+from hospital.config.enums import ActivityStatus, UserActivityStatus, OrderMainStatus
 from hospital.extensions.register_ext import celery, db, conn
-from hospital.models import Activity, UserActivity
+from hospital.models import Activity, UserActivity, OrderMain
 
 
 def add_async_task(func, start_time, func_args, conn_id=None):
@@ -59,6 +59,19 @@ def change_activity_status(acid):
     finally:
         current_app.logger.info('>>> 共修改 {} 天记录 <<<'.format(len(instance_list)))
         current_app.logger.info('>>> 修改活动状态结束 acid:{} <<<'.format(acid))
+
+@celery.task()
+def auto_cancle_order(omid):
+    from ..control.COrder import COrder
+    order_main = OrderMain.query.filter(OrderMain.isdelete == False,
+                                        OrderMain.OMstatus == OrderMainStatus.wait_pay.value,
+                                        OrderMain.OMid == omid).first()
+    if not order_main:
+        current_app.logger.info('订单已支付或已取消')
+        return
+    current_app.logger.info('订单自动取消{}'.format(dict(order_main)))
+    corder = COrder()
+    corder._cancle(order_main)
 
 
 if __name__ == '__main__':

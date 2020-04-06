@@ -5,9 +5,11 @@ from contextlib import contextmanager
 from flask_celery import Celery
 from flask_sqlalchemy import SQLAlchemy as _SQLAlchemy
 from hospital.extensions.aliyunoss.storage import AliyunOss
+from hospital.extensions.weixin import WeixinPay
 from .query_session import Query
 from hospital.config.secret import DB_PARAMS, SERVICE_APPID, SERVICE_APPSECRET, server_dir, ACCESS_KEY_ID, \
-    ACCESS_KEY_SECRET, ALIOSS_BUCKET_NAME, ALIOSS_ENDPOINT
+    ACCESS_KEY_SECRET, ALIOSS_BUCKET_NAME, ALIOSS_ENDPOINT, appid, mch_id, mch_key, wxpay_notify_url, apiclient_key, \
+    apiclient_cert
 from .loggers import LoggerHandler
 from .weixin.mp import WeixinMP
 
@@ -31,6 +33,7 @@ class SQLAlchemy(_SQLAlchemy):
 
 db = SQLAlchemy(query_class=Query, session_options={"expire_on_commit": False, "autoflush": False})
 
+wx_pay = WeixinPay(appid, mch_id, mch_key, wxpay_notify_url, apiclient_key, apiclient_cert)
 wx_server = WeixinMP(SERVICE_APPID, SERVICE_APPSECRET,
                      ac_path=os.path.join(server_dir, ".access_token"),
                      jt_path=os.path.join(server_dir, ".jsapi_ticket"))
