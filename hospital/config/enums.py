@@ -108,6 +108,7 @@ class CouponUserStatus(Enum):
     had_use = 601, "已经使用"
     not_use = 602, "优惠折扣"
     had_delete = 603, "已经过期"
+    cannot_use = 605, "不能使用"
 
 
 class ConsultationStatus(Enum):
@@ -129,6 +130,23 @@ class ProductType(Enum):
     product = 0, '正常商品'
     coupon = 1, '优惠券'
     package = 2, '套餐'
+
+
+class OrderMainStatus(Enum):
+    wait_pay = 0, '待支付'
+    ready = 30, '已完成'
+    cancle = -40, '已取消'
+
+
+class OrderPayType(Enum):
+    wx = 0, '微信'
+    mix = 5, '组合支付'
+    integral = 10, '积分'
+
+
+class OrderMainType(Enum):
+    product = 0, '积分商城商品'
+    setmeal = 1, '课时套餐'
 
 
 if __name__ == '__main__':
