@@ -70,7 +70,7 @@ class UserIntegral(Base):
     USid = Column(String(64), comment='用户id')
     UIintegral = Column(Integer, comment='该动作产生的积分变化数')
     UIaction = Column(Integer, default=1, comment='积分变动原因')
-    UItype = Column(Integer, default=1, comment='积分变动类型 1 收入 2 支出')
+    UItype = Column(Integer, default=1, comment='积分变动类型 1 收入 2 支出 3 退还')
     UItrue = Column(Integer, default=0, comment='是否领取 0 未领取 1已领取')
 
 
@@ -82,6 +82,11 @@ class IdentifyingCode(Base):
     ICcode = Column(String(8), nullable=False)  # 获取到的验证码
 
 
-
 class UserHour(Base):
     """用户购买的课时"""
+    __tablename__ = "UserHour"
+    UHid = Column(String(64), primary_key=True)
+    USid = Column(String(64), comment='用户ID')
+    CLid = Column(String(64), comment='课程ID')
+    SMnum = Column(Integer, default=0, comment='课时')
+    UHnum = Column(Integer, default=0, comment='可用课时')

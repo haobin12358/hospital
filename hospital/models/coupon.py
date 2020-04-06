@@ -5,6 +5,7 @@ from sqlalchemy.dialects.mysql import LONGTEXT
 
 from hospital.extensions.base_model import Base, Column
 
+
 class Coupon(Base):
     """优惠券"""
     __tablename__ = 'Coupon'
@@ -17,6 +18,7 @@ class Coupon(Base):
     COlimitnum = Column(Integer, default=0, comment='发放数量')
     COgetnum = Column(Integer, default=0, comment='已领数量')
 
+
 class CouponUser(Base):
     """用户的优惠券"""
     __tablename__ = 'CouponUser'
@@ -28,3 +30,4 @@ class CouponUser(Base):
     COendtime = Column(DateTime, comment='有效期结束时间')
     COdownline = Column(DECIMAL(scale=2), comment='使用最低金额限制,0 为无限制')
     UCalreadyuse = Column(Integer, default=602, comment='是否已经使用 601已使用602未使用603已过期')
+    OMid = Column(String(64), comment='订单ID')
