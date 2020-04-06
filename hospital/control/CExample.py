@@ -76,7 +76,7 @@ class CExample(object):
                             raise ParamsError('排序请输入整数')
                     if update_dict.get('EXgender'):
                         try:
-                            update_dict['EXgender'] = Gender(update_dict.get('EXgender')).value
+                            update_dict['EXgender'] = Gender(int(update_dict.get('EXgender'))).value
                         except:
                             raise ParamsError('性别数据有误')
                     exm.update(update_dict)
@@ -127,6 +127,7 @@ class CExample(object):
             exm.add('EXbriefIntroduction')
         elif index == 'back':
             exm.add('EXname')
+            exm.add('EXbriefIntroduction')
             self._fill_symptom(exm)
         else:
             exm.fields = '__all__'
