@@ -21,6 +21,7 @@ from .api.AReview import AReview
 from .api.AConsultation import AConsultation
 from .api.AWelfare import AWelfare
 from .api.AProducts import AProducts
+from .api.AOrder import AOrder
 from .extensions.request_handler import error_handler, request_first_handler
 from .config.secret import DefaltSettig
 from .extensions.register_ext import register_ext
@@ -47,6 +48,7 @@ def register(app):
     bp.add_url_rule('/activity/<string:activity>', view_func=AActivity.as_view('activity'))
     bp.add_url_rule('/product/<string:product>', view_func=AProducts.as_view('product'))
     bp.add_url_rule('/consultation/<string:consultation>', view_func=AConsultation.as_view('consultation'))
+    bp.add_url_rule('/order/<string:order>', view_func=AOrder.as_view('order'))
     bp.add_url_rule('/welfare/<string:welfare>', view_func=AWelfare.as_view('welfare'))
     app.register_blueprint(bp)
 

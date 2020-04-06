@@ -11,15 +11,15 @@ import uuid
 from sqlalchemy import or_
 
 from hospital import JSONEncoder
-from hospital.extensions.interface.user_interface import is_user, admin_required, token_required
+from hospital.extensions.interface.user_interface import admin_required, token_required
 from hospital.extensions.success_response import Success
 from hospital.extensions.error_response import ParamsError, StatusError
 from hospital.extensions.params_validates import parameter_required
 from hospital.extensions.register_ext import db, wx_pay
 from hospital.extensions.weixin.pay import WeixinPayError
-from hospital.models import Admin, Coupon, Products, Classes, User, OrderMain, CouponUser, UserAddress, AddressProvince, \
+from hospital.models import Coupon, Products, Classes, User, OrderMain, CouponUser, UserAddress, AddressProvince, \
     AddressCity, AddressArea, UserIntegral, OrderPay, UserHour, Setmeal
-from hospital.config.enums import ProductStatus, ProductType, AdminStatus, CouponUserStatus, OrderMainStatus, \
+from hospital.config.enums import ProductStatus, ProductType, CouponUserStatus, OrderMainStatus, \
     OrderPayType, OrderMainType
 
 
@@ -29,7 +29,7 @@ class COrder(object):
         data = parameter_required()
         omstatus = data.get('omstatus')
         omname = data.get('omname')
-        filter_args = [OrderMain.isdelete ==0,]
+        filter_args = [OrderMain.isdelete == 0, ]
         if omstatus is not None:
             try:
                 omstatus = OrderMainStatus(int(str(omstatus))).value
@@ -41,16 +41,15 @@ class COrder(object):
                 OrderMain.CLname.ilike('%{}%'.format(omname)),
                 OrderMain.PRtitle.ilike('%{}%'.format(omname))))
 
-        omlist = OrderMain.query.filter(*filter_args).all_with_page()
+        omlist = OrderMain.query.filter(*filter_args).order_by(OrderMain.createtime.desc()).all_with_page()
         return Success('获取成功', data=omlist)
 
     @admin_required
     def get(self):
         data = parameter_required('omid')
         omid = data.get('omid')
-        om = OrderMain.query.filter(OrderMain.OMid == omid, OrderMain.isdelete ==0).first_('订单已删除')
+        om = OrderMain.query.filter(OrderMain.OMid == omid, OrderMain.isdelete == 0).first_('订单已删除')
         return Success('获取成功', data=om)
-
 
     @token_required
     def create(self):
@@ -133,6 +132,11 @@ class COrder(object):
         }
         return Success('下单成功', data=response)
 
+    def wechat_notify(self):
+        """微信支付回调"""
+        # todo
+        pass
+
     def pay(self):
         """订单发起支付"""
         # todo  前端有了订单列表之后增加该接口用以继续支付
@@ -193,11 +197,6 @@ class COrder(object):
             now_num = int(uh.SMnum)
             reduce_num = now_num - int(ordermain.SMnum) * int(ordermain.OMnum)
             uh.SMnum = reduce_num if reduce_num >= 0 else 0
-
-    def wechat_notify(self):
-        """微信支付回调"""
-        # todo
-        pass
 
     @staticmethod
     def _generic_omno():
