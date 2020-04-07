@@ -13,10 +13,10 @@ from hospital.extensions.interface.user_interface import is_doctor, is_hign_leve
 from hospital.extensions.success_response import Success
 from hospital.extensions.request_handler import token_to_user_
 from hospital.extensions.params_validates import parameter_required
-from hospital.extensions.error_response import ParamsError, AuthorityError, UserInfoError, CourseStatusError
+from hospital.extensions.error_response import PoorScore, AuthorityError, UserInfoError, CourseStatusError
 from hospital.models.departments import Doctor, Departments, DoctorMedia
 from hospital.models.classes import Classes, Course, Subscribe, Setmeal
-from hospital.models.user import User
+from hospital.models.user import User, UserHour
 from hospital.config.enums import CourseStatus, SubscribeStatus
 from hospital.models.review import Review
 from hospital.models.register import Register
@@ -100,7 +100,11 @@ class CClasses:
                     doctor.fill("dename", department["DEname"]) # 科室名称
                     review_good = Review.query.filter(Review.isdelete == 0, Review.RVnum >= 4, Review.DOid == doid).all()
                     review = Review.query.filter(Review.isdelete == 0, Review.DOid == doid).all()
-                    review_percentage = Decimal(str(int(len(review_good) / len(review) or 0)))
+                    if len(review) == 0:
+                        # 无评论情况下默认100%好评率
+                        review_percentage = 1
+                    else:
+                        review_percentage = Decimal(str(int(len(review_good) / len(review) or 0)))
                     doctor.fill("favorablerate", "{0}%".format(review_percentage * 100)) # 好评率
                     register = Register.query.filter(Register.DOid == doid, Register.isdelete == 0).all()
                     doctor.fill("treatnum", len(register)) # 接诊次数
@@ -316,7 +320,14 @@ class CClasses:
         user_id = token_to_user_(args.get("token")).id
         user = User.query.filter(User.USid == user_id).first_("未找到用户信息")
         print(user)
-        # TODO 需要查看用户是否有对应的课时余额
+        # 查看用户是否有对应的课时余额
+        userhour_list = UserHour.query.filter(UserHour.USid == user_id, UserHour.isdelete == 0,
+                                         UserHour.CLid == course.CLid).all()
+        uhnum = 0
+        for userhour in userhour_list:
+            uhnum += userhour.UHnum
+        if uhnum <= 0:
+            return PoorScore()
         if "UStelphone" not in user.keys() or not user["UStelphone"]:
             return UserInfoError()
         su_dict = {
