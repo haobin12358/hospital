@@ -13,7 +13,8 @@ from hospital.extensions.interface.user_interface import is_doctor, is_hign_leve
 from hospital.extensions.success_response import Success
 from hospital.extensions.request_handler import token_to_user_
 from hospital.extensions.params_validates import parameter_required
-from hospital.extensions.error_response import PoorScore, AuthorityError, UserInfoError, CourseStatusError
+from hospital.extensions.error_response import PoorScore, AuthorityError, UserInfoError, CourseStatusError, ParamsError
+from hospital.extensions.tasks import add_async_task, change_course_status, cancel_async_task
 from hospital.models.departments import Doctor, Departments, DoctorMedia
 from hospital.models.classes import Classes, Course, Subscribe, Setmeal
 from hospital.models.user import User, UserHour
@@ -126,6 +127,8 @@ class CClasses:
         # 时间控制
         start_time = datetime.datetime.strptime(data.get('costarttime'), "%Y-%m-%d %H:%M:%S")
         end_time = datetime.datetime.strptime(data.get('coendtime'), "%Y-%m-%d %H:%M:%S")
+        if not (end_time > start_time > datetime.datetime.now()):
+            raise ParamsError('课程结束时间要大于开始时间, 开始时间要大于当前时间')
         if start_time.date() != end_time.date():
             return {
                 "status": 405,
@@ -147,6 +150,13 @@ class CClasses:
                 co_dict["COid"] = str(uuid.uuid1())
                 co_instance = Course.create(co_dict)
                 msg = "创建成功"
+
+                # 添加开始异步任务
+                add_async_task(func=change_course_status, start_time=start_time,
+                               func_args=(co_dict["COid"],), conn_id='start_course{}'.format(co_dict["COid"]))
+                # 添加结束异步任务
+                add_async_task(func=change_course_status, start_time=end_time,
+                               func_args=(co_dict["COid"], True), conn_id='end_course{}'.format(co_dict["COid"]))
             else:
                 # 判断课程排班状态和已报名人数，已开始/已结束或者存在报名人员不可修改
                 course = Course.query.filter(Course.COid == coid).first()
@@ -156,9 +166,17 @@ class CClasses:
                 if subscribe:
                     return AuthorityError("已有人报名，不可修改")
                 co_instance = Course.query.filter(Course.COid == coid).first_('未找到该课程排班信息')
-
                 co_instance.update(co_dict, null='not')
                 msg = '编辑成功'
+
+                cancel_async_task(conn_id='start_course{}'.format(co_instance.COid))  # 取消已有的开始时间异步任务
+                cancel_async_task(conn_id='end_course{}'.format(co_instance.COid))  # 取消已有的结束时间异步任务
+                # 重新添加开始异步任务
+                add_async_task(func=change_course_status, start_time=start_time,
+                               func_args=(co_instance.COid,), conn_id='start_course{}'.format(co_instance.COid))
+                # 重新添加结束异步任务
+                add_async_task(func=change_course_status, start_time=end_time,
+                               func_args=(co_instance.COid, True), conn_id='end_course{}'.format(co_instance.COid))
             db.session.add(co_instance)
         return Success(message=msg, data={"coid": co_instance.COid})
 
@@ -183,6 +201,10 @@ class CClasses:
                     return AuthorityError("已有人报名，不可修改")
                 co_instance.update(co_dict, null='not')
                 db.session.add(co_instance)
+
+                cancel_async_task(conn_id='start_course{}'.format(co_instance.COid))  # 取消已有的开始时间异步任务
+                cancel_async_task(conn_id='end_course{}'.format(co_instance.COid))  # 取消已有的结束时间异步任务
+
         return Success(message='删除成功')
 
     def get_course(self):
