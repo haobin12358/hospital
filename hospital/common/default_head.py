@@ -101,15 +101,15 @@ class GithubAvatarGenerator:
         month = str(time_now.month)
         day = str(time_now.day)
         img = self._get_avatar_data()
-        newPath = os.path.join(current_app.config['BASEDIR'], 'img', 'defaulthead', year, month, day)
-        if not os.path.isdir(newPath):
-            os.makedirs(newPath)
+        new_path = os.path.join(current_app.config['BASEDIR'], 'img', 'defaulthead', year, month, day)
+        if not os.path.isdir(new_path):
+            os.makedirs(new_path)
         # newPath = newPath + filepath + '.png'
-        newPath = os.path.join(newPath, filepath + '.png')
-        current_app.logger.info(newPath)
-        cv2.imwrite(newPath, img)
+        new_path = os.path.join(new_path, filepath + '.png')
+        current_app.logger.info(new_path)
+        cv2.imwrite(new_path, img)
         data = '/img/defaulthead/{}/{}/{}/{}'.format(year, month, day, filepath + '.png')
-        return data
+        return data, new_path
 
 
 if __name__ == '__main__':
