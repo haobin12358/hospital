@@ -460,6 +460,12 @@ class CClasses:
         subcribe_list = Subscribe.query.filter(*filter_args).order_by(Subscribe.createtime).all_with_page()
         for subcribe in subcribe_list:
             subcribe.fill("sustatus_zh", SubscribeStatus(int(subcribe["SUstatus"])).zh_value)
+            doid = subcribe["DOid"]
+            doctor = Doctor.query.filter(Doctor.DOid == doid).first_("未找到该医生信息")
+            subcribe.fill('dotitle', doctor.DOtitle)
+            docmedia = DoctorMedia.query.filter(DoctorMedia.DOid == doid, DoctorMedia.DMtype == 0,
+                                                DoctorMedia.isdelete == 0).first()
+            subcribe.fill('doctormainpic', docmedia.DMmedia)
             coid = subcribe["COid"]
             course = Course.query.filter(Course.COid == coid, Course.isdelete == 0).first_("未找到课程排班信息")
             clid = course["CLid"]
