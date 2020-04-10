@@ -13,6 +13,7 @@ from hospital.extensions.error_response import AuthorityError, SystemError
 from hospital.extensions.request_handler import token_to_user_
 from hospital.models.config import Banner, Setting, Characteristicteam, Honour, PointTask
 from hospital.models.user import UserIntegral, User
+from hospital.config.enums import PointTaskType
 
 class CConfig:
 
@@ -256,6 +257,36 @@ class CConfig:
                         pointtask.fill("is_get", 1)
                     else:
                         pointtask.fill("is_get", 0)
+                    time_now = datetime.datetime.now()
+                    pttime = pointtask.PTtime
+                    if pttime > 0:
+                        userintegral_end = UserIntegral.query.filter(UserIntegral.isdelete == 0,
+                                                                     UserIntegral.UItrue == 1,
+                                                                     UserIntegral.UItype == 1,
+                                                                     UserIntegral.UIaction == pointtask.PTtype,
+                                                                     UserIntegral.createtime >
+                                                                     datetime.datetime(time_now.year,
+                                                                                       time_now.month,
+                                                                                       time_now.day, 0, 0, 0),
+                                                                     UserIntegral.createtime <
+                                                                     datetime.datetime(time_now.year,
+                                                                                       time_now.month,
+                                                                                       time_now.day, 23, 59, 59)
+                                                                     ).all()
+                        if pttime <= len(userintegral_end):
+                            pointtask["is_get"] = 2
+                    elif pttime < 0:
+                        pttime = abs(pttime)
+                        userintegral_end = UserIntegral.query.filter(UserIntegral.isdelete == 0,
+                                                                     UserIntegral.UItrue == 1,
+                                                                     UserIntegral.UItype == 1,
+                                                                     UserIntegral.UIaction == pointtask.PTtype
+                                                                     ).all()
+                        if pttime <= len(userintegral_end):
+                            pointtask["is_get"] = 2
+                    else:
+                        pass
+
         return Success(message="获取任务列表成功", data=pointtask_list)
 
     def update_pointtask(self):
@@ -293,6 +324,8 @@ class CConfig:
         for user_item in userIntegral:
             user = User.query.filter(User.USid == user_item.USid).first()
             user_item.fill('usname', user.USname)
+            user_item.fill('utname', PointTaskType(user_item.UIaction).zh_value)
+            user_item.fill('createtime', user.createtime)
         return Success(message="获取积分变动成功", data=userIntegral)
 
     def _judge_point(self, pttype, uitype, usid, uiintegral=None):
