@@ -4,7 +4,7 @@ from sqlalchemy import false
 from datetime import timedelta
 from hospital.config.enums import ActivityStatus, UserActivityStatus, OrderMainStatus
 from hospital.extensions.register_ext import celery, db, conn
-from hospital.models import Activity, UserActivity, OrderMain
+from hospital.models import Activity, UserActivity, OrderMain, Course
 
 
 def add_async_task(func, start_time, func_args, conn_id=None):
@@ -37,9 +37,9 @@ def cancel_async_task(conn_id):
 @celery.task()
 def change_activity_status(acid):
     current_app.logger.info(">>> 更改活动状态 acid:{} <<<".format(acid))
+    instance_list = []
     try:
         activity = Activity.query.filter(Activity.isdelete == false(), Activity.ACid == acid).first()
-        instance_list = []
         if not activity:
             current_app.logger.error('acid: {} 不存在'.format(acid))
             return
@@ -59,6 +59,33 @@ def change_activity_status(acid):
     finally:
         current_app.logger.info('>>> 共修改 {} 天记录 <<<'.format(len(instance_list)))
         current_app.logger.info('>>> 修改活动状态结束 acid:{} <<<'.format(acid))
+
+
+@celery.task()
+def change_course_status(coid, end=False):
+    current_app.logger.info(">>> 更改课程排班状态 coid:{} <<<".format(coid))
+    try:
+        with db.auto_commit():
+            course = Course.query.filter(Course.isdelete == false(), Course.COid == coid).first()
+            if not course:
+                current_app.logger.error('未找到该排版')
+                return
+            if not end:  # 开始课程
+                if course.COstatus != 101:
+                    current_app.logger.error('排版状态不为101, COstatus: {}'.format(course.COstatus))
+                    return
+                course.update({'COstatus': 102})
+            else:  # 结束课程
+                if course.COstatus != 102:
+                    current_app.logger.error('排版状态不为102, COstatus: {}'.format(course.COstatus))
+                    return
+                course.update({'COstatus': 103})
+            db.session.add(course)
+    except Exception as e:
+        current_app.logger.error('Error: {}'.format(e))
+    finally:
+        current_app.logger.info(">>> 更改课程排班状态, 任务结束 coid:{} <<<".format(coid))
+
 
 @celery.task()
 def auto_cancle_order(omid):

@@ -148,6 +148,22 @@ class OrderMainType(Enum):
     product = 0, '积分商城商品'
     setmeal = 1, '课时套餐'
 
+class PointTaskType(Enum):
+    login = 701, '登录'
+    invate_new = 702, '邀请新用户'
+    fill_me = 703, '完善个人信息'
+    fill_family = 704, '完善家人信息'
+    buy_vip = 705, '购买VIP'
+    vip_money = 706, '充值'
+    watch_video = 707, '看视频'
+    register = 708, '挂号'
+    review = 709, '评论'
+    buy_product = 710, '积分购物'
+    make_activity = 711, '报名活动'
+    help_someone = 712, '报名公益援助'
+    make_evaluation = 713, '参加健康评测'
+    reget_point = 714, '积分退还'
+
 
 if __name__ == '__main__':
     print(CourseStatus(101).zh_value)
