@@ -120,19 +120,20 @@ class CUser(object):
     def _get_local_head(self, headurl, openid):
         """转置微信头像到服务器，用以后续二维码生成"""
         if not headurl:
-            return GithubAvatarGenerator().save_avatar(openid)
-        data = requests.get(headurl)
-        filename = openid + '.png'
-        filepath, filedbpath = self._get_path('avatar')
-        filedbname = os.path.join(filedbpath, filename)
-        filename = os.path.join(filepath, filename)
-        with open(filename, 'wb') as head:
-            head.write(data.content)
+            filedbname, filename = GithubAvatarGenerator().save_avatar(openid)
+        else:
+            data = requests.get(headurl)
+            filename = openid + '.png'
+            filepath, filedbpath = self._get_path('avatar')
+            filedbname = os.path.join(filedbpath, filename)
+            filename = os.path.join(filepath, filename)
+            with open(filename, 'wb') as head:
+                head.write(data.content)
         # 头像上传到阿里oss
         try:
             ali_oss.save(data=filename, filename=filedbname[1:])
         except Exception as e:
-            current_app.logger.error('头像转存七牛云出错 : {}'.format(e))
+            current_app.logger.error('头像转存ali oss出错 : {}'.format(e))
         return filedbname
 
     @staticmethod
