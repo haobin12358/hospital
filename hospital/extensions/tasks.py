@@ -7,7 +7,7 @@ from hospital.extensions.register_ext import celery, db, conn
 from hospital.models import Activity, UserActivity, OrderMain, Course
 
 
-def add_async_task(func, start_time, func_args, conn_id=None):
+def add_async_task(func, start_time, func_args, conn_id=None, queue='high_priority'):
     """
     添加异步任务
     func: 任务方法名 function
@@ -15,9 +15,9 @@ def add_async_task(func, start_time, func_args, conn_id=None):
     func_args: 函数所需参数 tuple
     conn_id: 要存入redis的key
     """
-    task_id = func.apply_async(args=func_args, eta=start_time - timedelta(hours=8))
+    task_id = func.apply_async(args=func_args, eta=start_time - timedelta(hours=8), queue=queue)
     connid = conn_id if conn_id else str(func_args[0])
-    current_app.logger.info('add async task: func_args:{} | connid: {}, task_id: {}'.format(func_args, connid, task_id))
+    current_app.logger.info(f'add async task: func_args:{func_args} | connid: {conn_id}, task_id: {task_id}')
     conn.set(connid, str(task_id))
 
 
@@ -31,7 +31,7 @@ def cancel_async_task(conn_id):
         exist_task_id = str(exist_task_id, encoding='utf-8')
         celery.AsyncResult(exist_task_id).revoke()
         conn.delete(conn_id)
-        current_app.logger.info('取消任务成功 task_id:{}'.format(exist_task_id))
+        current_app.logger.info(f'取消任务成功 task_id:{exist_task_id}')
 
 
 @celery.task()
@@ -68,18 +68,20 @@ def change_course_status(coid, end=False):
         with db.auto_commit():
             course = Course.query.filter(Course.isdelete == false(), Course.COid == coid).first()
             if not course:
-                current_app.logger.error('未找到该排版')
+                current_app.logger.error('未找到该排班')
                 return
             if not end:  # 开始课程
                 if course.COstatus != 101:
-                    current_app.logger.error('排版状态不为101, COstatus: {}'.format(course.COstatus))
+                    current_app.logger.error('排班状态不为101, COstatus: {}'.format(course.COstatus))
                     return
                 course.update({'COstatus': 102})
+                current_app.logger.info('COstatus: 101 --> 102')
             else:  # 结束课程
                 if course.COstatus != 102:
-                    current_app.logger.error('排版状态不为102, COstatus: {}'.format(course.COstatus))
+                    current_app.logger.error('排班状态不为102, COstatus: {}'.format(course.COstatus))
                     return
                 course.update({'COstatus': 103})
+                current_app.logger.info('COstatus: 102 --> 103')
             db.session.add(course)
     except Exception as e:
         current_app.logger.error('Error: {}'.format(e))
