@@ -338,7 +338,7 @@ class CConfig:
             if uitype == 1:
                 """收入"""
                 pointtask = PointTask.query.filter(PointTask.PTtype == pttype).first_("该类型错误")
-                pttime = int(pointtask.PTtime)
+                pttime = int(pointtask.PTtime or 0)
                 ui_dict = {
                     "UIid": str(uuid.uuid1()),
                     "USid": usid,
