@@ -2,7 +2,8 @@
 from flask import current_app, request
 import uuid
 
-from hospital.extensions.interface.user_interface import doctor_required
+from hospital.config.enums import PointTaskType
+from hospital.extensions.interface.user_interface import doctor_required, token_required
 from hospital.extensions.success_response import Success
 from hospital.extensions.error_response import ParamsError
 from hospital.extensions.params_validates import parameter_required
@@ -157,9 +158,11 @@ class CVideo(object):
             db.session.add(doctor)
         return Success('创建视频成功', data=viid)
 
+    @token_required
     def get_video(self):
         data = parameter_required('viid')
         viid = data.get('viid')
+        usid = getattr(request, 'user').id
         video = Video.query.filter(Video.VIid == viid, Video.isdelete == 0).first_('视频已删除')
         if video.SEid:
             se_video_list = Video.query.filter(Video.SEid == video.SEid, Video.isdelete == 0).order_by(
@@ -170,6 +173,9 @@ class CVideo(object):
             series = Series.query.filter(Series.SEid == video.SEid, Series.isdelete == 0).first()
             if series:
                 video.fill('sename', series.SEname)
+        # 添加积分获取
+        from .CConfig import CConfig
+        CConfig()._judge_point(PointTaskType.watch_video.value, 1, usid)
 
         return Success('获取成功', data=video)
 
