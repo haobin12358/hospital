@@ -5,7 +5,8 @@ last update time:2020/3/13 03:53
 """
 import uuid, datetime
 from flask import request, current_app
-from hospital.extensions.interface.user_interface import admin_required, is_admin, is_hign_level_admin
+from hospital.extensions.interface.user_interface import admin_required, is_admin, is_hign_level_admin, token_required, \
+    is_doctor, is_user
 from hospital.extensions.register_ext import db
 from hospital.extensions.params_validates import parameter_required
 from hospital.extensions.success_response import Success
@@ -239,15 +240,17 @@ class CConfig:
         csd = Setting.query.filter(Setting.isdelete == 0, Setting.STname == "VIP").first()
         return Success(data=csd)
 
+    @token_required
     def get_pointtask(self):
         """获取任务列表"""
         args = parameter_required(('token', ))
-        user = token_to_user_(args.get('token'))
-        if user.model == "Doctor":
+        # user = token_to_user_(args.get('token'))
+        # user = getattr(request, 'user')
+        if is_doctor():
             return AuthorityError()
         else:
             pointtask_list = PointTask.query.filter(PointTask.isdelete == 0).order_by(PointTask.PTid.asc()).all()
-            if user.model == "User":
+            if is_user():
                 # 前台需要增加是否可完成的状态
                 for pointtask in pointtask_list:
                     userintegral = UserIntegral.query.filter(UserIntegral.isdelete == 0, UserIntegral.UItrue == 0,
@@ -258,7 +261,7 @@ class CConfig:
                     else:
                         pointtask.fill("is_get", 0)
                     time_now = datetime.datetime.now()
-                    pttime = pointtask.PTtime
+                    pttime = pointtask.PTtime or 0
                     if pttime > 0:
                         userintegral_end = UserIntegral.query.filter(UserIntegral.isdelete == 0,
                                                                      UserIntegral.UItrue == 1,
