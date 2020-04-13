@@ -57,15 +57,22 @@ class OrderMain(Base):
     SMid = Column(String(64), comment='课时套餐ID')
     CLid = Column(String(64), comment="课程id")
     CLname = Column(String(128), comment="课程名称")
-    SMnum = Column(Integer, nullable=False, comment="课时数")
+    SMnum = Column(Integer, comment="课时数")
     SMprice = Column(DECIMAL(scale=2), comment="套餐价格")
 
-    PRid = Column(String(64), nullable=False, comment='商品id')
-    PRprice = Column(DECIMAL(precision=28, scale=2), nullable=False, comment='单价')
+    PRid = Column(String(64), comment='商品id')
+    PRprice = Column(DECIMAL(precision=28, scale=2), comment='单价')
+    PRintegral = Column(Integer, comment='积分价格')
     PRtitle = Column(String(255), comment='商品标题')
     PRmedia = Column(String(255), comment='主图', url=True)
     PRcontent = Column(Text, comment='关联优惠券/课程的信息')
+    PRtype = Column(Integer, default=0, comment='商品类型')
 
+    @orm.reconstructor
+    def __init__(self):
+        super(OrderMain, self).__init__()
+        self.add('createtime')
+        self.hide('PRcontent', 'USid')
 
 
 

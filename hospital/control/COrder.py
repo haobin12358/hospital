@@ -2,7 +2,7 @@
 import random
 import re
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 from flask import current_app, request, json
@@ -11,11 +11,12 @@ import uuid
 from sqlalchemy import or_
 
 from hospital.extensions.base_jsonencoder import JSONEncoder
-from hospital.extensions.interface.user_interface import admin_required, token_required
+from hospital.extensions.interface.user_interface import admin_required, token_required, is_user
 from hospital.extensions.success_response import Success
 from hospital.extensions.error_response import ParamsError, StatusError
 from hospital.extensions.params_validates import parameter_required
 from hospital.extensions.register_ext import db, wx_pay
+from hospital.extensions.tasks import add_async_task
 from hospital.extensions.weixin.pay import WeixinPayError
 from hospital.models import Coupon, Products, Classes, User, OrderMain, CouponUser, UserAddress, AddressProvince, \
     AddressCity, AddressArea, UserIntegral, OrderPay, UserHour, Setmeal
@@ -24,13 +25,18 @@ from hospital.config.enums import ProductStatus, ProductType, CouponUserStatus, 
 
 
 class COrder(object):
-    @admin_required
+    @token_required
     def list(self):
         data = parameter_required()
+        usid = getattr(request, 'user').id
         omstatus = data.get('omstatus')
         omname = data.get('omname')
         filter_args = [OrderMain.isdelete == 0, ]
-        if omstatus is not None:
+        if is_user():
+            filter_args.append(OrderMain.OMstatus == OrderMainStatus.ready.value)
+            filter_args.append(OrderMain.OMtype == OrderMainType.setmeal.value)
+            filter_args.append(OrderMain.USid == usid)
+        elif omstatus is not None:
             try:
                 omstatus = OrderMainStatus(int(str(omstatus))).value
             except:
@@ -42,7 +48,13 @@ class COrder(object):
                 OrderMain.PRtitle.ilike('%{}%'.format(omname))))
 
         omlist = OrderMain.query.filter(*filter_args).order_by(OrderMain.createtime.desc()).all_with_page()
-        return Success('获取成功', data=omlist)
+        if is_user():
+            uh_list = UserHour.query.filter(UserHour.USid == usid, UserHour.isdelete == 0).all()
+            # 可用时长统计
+            smsum = sum([int(uh.UHnum) for uh in uh_list])
+            return Success('获取成功', data={'omlist': omlist, 'smsum': smsum})
+
+        return Success('获取成功', data={'omlist': omlist})
 
     @admin_required
     def get(self):
@@ -57,10 +69,10 @@ class COrder(object):
         usid = getattr(request, 'user').id
         ucid = data.get('ucid')
         prid = data.get('prid')
-        omnum = data.get('omnum')
+        omnum = data.get('omnum', 1)
         uaid = data.get('uaid')
-        smid = data.get('smid ')
-        clid = data.get('clid ')
+        smid = data.get('smid')
+        clid = data.get('clid')
         omtype = data.get('omtype')
 
         omid = str(uuid.uuid1())
@@ -112,18 +124,25 @@ class COrder(object):
                 raise ParamsError('订单创建异常')
 
         from ..extensions.tasks import auto_cancle_order
-        auto_cancle_order.apply_async(args=(omid,), countdown=30 * 60, expires=40 * 60, )
+        # auto_cancle_order.apply_async(args=(omid,), countdown=30 * 60, expires=40 * 60, )
+        # todo 修改自动取消为30 minute
+        add_async_task(func=auto_cancle_order, start_time=now + timedelta(minutes=3), func_args=(omid,))
         # # 生成支付信息
         # body = product.PRtitle
         openid = user.USopenid
+
+        # todo 修改支付参数获取
         if not truemount:
             pay_type = OrderPayType.integral.value
             pay_args = 'integralpay'
+            self._over_ordermain(omid)
         elif not omintegralpayed:
-            pay_args = self._pay_detail(opayno, float(truemount), body, openid=openid)
+            # pay_args = self._pay_detail(opayno, float(truemount), body, openid=openid)
+            pay_args = 'wxpay'
             pay_type = OrderPayType.wx.value
         else:
-            pay_args = self._pay_detail(opayno, float(truemount), body, openid=openid)
+            # pay_args = self._pay_detail(opayno, float(truemount), body, openid=openid)
+            pay_args = 'wxpay'
             pay_type = OrderPayType.mix.value
 
         response = {
@@ -272,7 +291,7 @@ class COrder(object):
         trueunit = product.PRvipPrice if user.USlevel and product.PRvipPrice else product.PRprice
 
         truemount = (Decimal(trueunit) if trueunit else Decimal(0)) * decimal_omnum
-
+        ucid = ''
         if uc:
             if uc.COdownline and truemount >= Decimal(uc.COdownline):
                 # 优惠后价格
@@ -281,6 +300,7 @@ class COrder(object):
                     truemount = Decimal(0)
                 uc.UCalreadyuse = CouponUserStatus.had_use.value
                 db.session.add(uc)
+                ucid = uc.UCid
 
             else:
                 raise ParamsError('商品价格达不到优惠券最低金额')
@@ -323,7 +343,7 @@ class COrder(object):
             'OMid': omid,
             'OMno': self._generic_omno(),
             'USid': user.USid,
-            'UCid': uc.UCid,
+            'UCid': ucid,
             'OPayno': opayno,
             'OMmount': mount,
             'OMtrueMount': truemount,
@@ -334,15 +354,15 @@ class COrder(object):
             'OMintegralpayed': omintegralpayed,
             'OMintegral': omintegral,
             'PRid': prid,
+            'PRtype': product.PRtype,
             'PRprice': product.PRprice,
-            'PRvipPrice': product.PRvipPrice,
             'PRintegral': product.PRintegral,
-            'PRvipIntegral': product.PRvipIntegral,
             'SMnum': product.SMnum,
             'PRtitle': product.PRtitle,
             'PRmedia': product.PRmedia,
             'PRcontent': content,
             'OMnum': omnum,
+            'OMtype': OrderMainType.product.value,
         })
         if truemount:
             op_instance = OrderPay.create({
@@ -377,44 +397,119 @@ class COrder(object):
     def _create_setmeal_order(self, smid, clid, omid, user, uc, omnum, opayno, ua, omrecvaddress):
         decimal_omnum = Decimal(omnum)
         if smid != '1':
-            sm = Setmeal.query.filter(Setmeal.SMid == smid, Setmeal.isdelete == 0).first_('课时套餐已下架')
-            # trueunit = sm.SMprice
+            sm = Setmeal.query.join(Classes, Classes.CLid == Setmeal.CLid).filter(
+                Setmeal.SMid == smid, Setmeal.CLid == clid,
+                Setmeal.isdelete == 0, Classes.isdelete == 0).first_('课时套餐已下架')
+            smnum = sm.SMnum
+            clname = sm.CLname
             trueunit = (Decimal(sm.SMprice) if sm.SMprice else Decimal(0))
+        else:
+            cl = Classes.queury.filter(Classes.CLid == clid, Classes.isdelete == 0).first_('课程已结束')
+            # trueunit = sm.SMprice
+            trueunit = (Decimal(cl.CLprice) if cl.CLprice else Decimal(0))
+            smnum = 1
+            clname = cl.CLname
 
-            mount = truemount = trueunit * decimal_omnum
-            if uc:
-                if uc.COdownline and truemount >= Decimal(uc.COdownline):
-                    # 优惠后价格
-                    truemount = truemount - Decimal(uc.COsubtration)
-                    if truemount < Decimal(0):
-                        truemount = Decimal(0)
-                    uc.UCalreadyuse = CouponUserStatus.had_use.value
-                    db.session.add(uc)
+        mount = truemount = trueunit * decimal_omnum
+        ucid = ''
+        if uc:
+            if uc.COdownline and truemount >= Decimal(uc.COdownline):
+                # 优惠后价格
+                truemount = truemount - Decimal(uc.COsubtration)
+                if truemount < Decimal(0):
+                    truemount = Decimal(0)
+                uc.UCalreadyuse = CouponUserStatus.had_use.value
+                ucid = uc.UCid
+                db.session.add(uc)
 
-                else:
-                    raise ParamsError('商品价格达不到优惠券最低金额')
-            omstatus = OrderMainStatus.wait_pay.value
-            if truemount == 0:
-                omstatus = OrderMainStatus.ready.value
-            self._increase_smnum(user.USid, clid, sm.SMnum, omnum, omstatus)
-            ordermain = OrderMain.create({
-                'omid': omid,
-                'OMno': self._generic_omno(),
-                'USid': user.USid,
-                'UCid': uc.UCid,
-                'OPayno': opayno,
-                'OMmount': mount,
-                'OMtrueMount': truemount,
-                'OMstatus': omstatus,
-                'OMrecvPhone': ua.UAtel,
-                'OMrecvName': ua.UAname,
-                'OMrecvAddress': omrecvaddress,
-                'OMnum': omnum,
-                'SMid': smid,
+            else:
+                raise ParamsError('商品价格达不到优惠券最低金额')
+        omstatus = OrderMainStatus.wait_pay.value
+
+        if truemount == 0:
+            omstatus = OrderMainStatus.ready.value
+        self._increase_smnum(user.USid, clid, smnum, omnum, omstatus)
+        ordermain = OrderMain.create({
+            'OMid': omid,
+            'OMno': self._generic_omno(),
+            'USid': user.USid,
+            'UCid': ucid,
+            'OPayno': opayno,
+            'OMmount': mount,
+            'OMtrueMount': truemount,
+            'OMstatus': omstatus,
+            'OMrecvPhone': ua.UAtel,
+            'OMrecvName': ua.UAname,
+            'OMrecvAddress': omrecvaddress,
+            'OMnum': omnum,
+            'SMid': smid,
+            'CLid': clid,
+            'CLname': clname,
+            'SMnum': smnum,
+            'OMtype': OrderMainType.setmeal.value,
+            'SMprice': trueunit
+        })
+        db.session.add(ordermain)
+        return clname, truemount
+
+    def _over_ordermain(self, omid):
+        # 完成订单
+        with db.auto_commit():
+            om = OrderMain.query.filter(
+                OrderMain.OMid == omid, OrderMain.OMstatus == OrderMainStatus.ready.value,
+                OrderMain.isdelete == 0).first()
+
+            if not om:
+                current_app.logger.error('完成订单有误，订单ID不存在')
+                return
+            omtype = om.OMtype
+            if int(omtype) == OrderMainType.product.value and int(om.PRtype) == ProductType.package.value:
+                # 课时添加 - 积分商城
+                omsmsum = int(om.SMnum) * int(om.OMnum)  # 订单总课时
+                classes = json.loads(om.PRcontent)
+                if not classes:
+                    current_app.logger.error('课时信息录入异常 omid = {}'.format(omid))
+                    return
+                self._increase_uhnum(om.USid, classes.get('CLid'), omsmsum)
+
+                return
+            if int(omtype) == OrderMainType.product.value and int(om.PRtype) == ProductType.coupon.value:
+                # 优惠券变为可用
+                CouponUser.query.filter(CouponUser.OMid == omid, CouponUser.isdelete == 0).update(
+                    {'UCalreadyuse': CouponUserStatus.not_use.value}, synchronize_session=False)
+
+            if int(omtype) == OrderMainType.setmeal.value:
+                # 课时添加 - 课时套餐
+                omsmsum = int(om.SMnum) * int(om.OMnum)
+                self._increase_uhnum(om.USid, om.CLid, omsmsum)
+
+    def _increase_uhnum(self, usid, clid, omsmsum):
+        uh = UserHour.query.filter(
+            UserHour.USid == usid, UserHour.CLid == clid, UserHour.isdelete == 0).first()
+        if not uh:
+            # 系统记录课时购买记录异常，创建新记录.课时直接到账
+            uh = UserHour.create({
+                'UHid': str(uuid.uuid1()),
+                'USid': usid,
                 'CLid': clid,
-                'CLname': sm.CLname,
-                'SMnum': sm.SMnum,
-                'SMprice': trueunit
+                'SMnum': omsmsum,
+                'UHnum': omsmsum
             })
-            db.session.add(ordermain)
-            return sm.CLnamem, truemount
+
+        else:
+            uh.UHnum = int(uh.UHnum) + omsmsum
+        db.session.add(uh)
+
+    def test_over_ordermain(self):
+        data = parameter_required()
+        omid = data.get('omid')
+        with db.auto_commit():
+            om = OrderMain.query.filter(OrderMain.OMid == omid, OrderMain.isdelete == 0).first()
+            current_app.logger.info('获取到订单 {}'.format(om))
+            if om:
+                om.update({'OMstatus': OrderMainStatus.ready.value})
+            db.session.add(om)
+
+        self._over_ordermain(omid)
+
+        return Success('订单完结成功')
