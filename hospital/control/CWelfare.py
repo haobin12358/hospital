@@ -110,7 +110,7 @@ class CWelfare:
                 .order_by(CouponUser.createtime.desc()).all_with_page()
         elif ucalreadyuse in [604]:
             coupon_list = CouponUser.query.filter(CouponUser.isdelete == 0, CouponUser.USid == usid,
-                                                  CouponUser.UCalreadyUse == 602,
+                                                  CouponUser.UCalreadyuse == 602,
                                                   CouponUser.COstarttime < datetime.datetime.now(),
                                                   CouponUser.COendtime > datetime.datetime.now())\
                 .order_by(CouponUser.createtime.desc()).all_with_page()

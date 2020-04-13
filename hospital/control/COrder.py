@@ -31,10 +31,16 @@ class COrder(object):
         usid = getattr(request, 'user').id
         omstatus = data.get('omstatus')
         omname = data.get('omname')
+        omtype = data.get('omtype', 0)
         filter_args = [OrderMain.isdelete == 0, ]
+        try:
+            omtype = OrderMainType(int(omtype)).value
+        except:
+            raise ParamsError('订单类型有误 {}'.format(omtype))
+
         if is_user():
             filter_args.append(OrderMain.OMstatus == OrderMainStatus.ready.value)
-            filter_args.append(OrderMain.OMtype == OrderMainType.setmeal.value)
+            filter_args.append(OrderMain.OMtype == omtype)
             filter_args.append(OrderMain.USid == usid)
         elif omstatus is not None:
             try:
@@ -126,7 +132,7 @@ class COrder(object):
         from ..extensions.tasks import auto_cancle_order
         # auto_cancle_order.apply_async(args=(omid,), countdown=30 * 60, expires=40 * 60, )
         # todo 修改自动取消为30 minute
-        add_async_task(func=auto_cancle_order, start_time=now + timedelta(minutes=3), func_args=(omid,))
+        add_async_task(func=auto_cancle_order, start_time=now + timedelta(minutes=30), func_args=(omid,))
         # # 生成支付信息
         # body = product.PRtitle
         openid = user.USopenid

@@ -81,6 +81,9 @@ class CProducts(object):
                 raise ParamsError('商品类型参数异常')
             if prtype == ProductType.coupon.value and not data.get('coid'):
                 raise ParamsError('缺少优惠券参数')
+            if prtype == ProductType.package.value and not data.get('clid'):
+                raise ParamsError('缺少课程参数')
+
         if prstatus:
             try:
                 prstatus = ProductStatus(int(str(prstatus))).value
@@ -188,6 +191,7 @@ class CProducts(object):
         except:
             raise ParamsError('{}需要是整数'.format(paramsname))
 
+    @admin_required
     def batch_operation(self):
         data = parameter_required('prstatus', )
 
