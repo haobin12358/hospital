@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import re
 import traceback
+import base64
 from collections import namedtuple
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired
 from flask import current_app, request
@@ -63,6 +64,52 @@ def _get_user_agent():
     return osversion, phonemodel, wechatversion, nettype, user_agent.string
 
 
+def _invitation_records():
+    secret_user_id = request.args.to_dict().get('secret_usid')
+    if not secret_user_id:
+        return
+    current_app.logger.info('>>>>>>>>record invitation<<<<<<<<')
+    try:
+        inviter_id = base_decode(secret_user_id)
+        current_app.logger.info(f'secret_usid --> inviter_id: {inviter_id}')
+    except Exception as e:
+        current_app.logger.error(f'解析secret_usid时出错： {e}')
+        return
+    from hospital.extensions.interface.user_interface import is_user
+    if not is_user():
+        return
+    usid = getattr(request, 'user').id
+    if inviter_id == usid:
+        current_app.logger.info('inviter == invitee')
+        return
+    from hospital.models.user import UserInvitation
+    from hospital.extensions.register_ext import db
+    import uuid
+    try:
+        with db.auto_commit():
+            uin = UserInvitation.create({
+                'UINid': str(uuid.uuid1()),
+                'USInviter': inviter_id,
+                'USInvitee': usid,
+                'UINapi': request.path
+            })
+            current_app.logger.info(f'{request.path} 创建邀请记录')
+            db.session.add(uin)
+    except Exception as e:
+        current_app.logger.error(f'存储邀请记录时出错： {e}')
+
+
+def base_decode(raw):
+    decoded = base64.b64decode(raw + '=' * (4 - len(raw) % 4)).decode()
+    return decoded
+
+
+def base_encode(raw):
+    import base64
+    raw = raw.encode()
+    return base64.b64encode(raw).decode()
+
+
 def request_first_handler(app):
     @app.before_request
     def token_to_user():
@@ -70,6 +117,10 @@ def request_first_handler(app):
         parameter = request.args.to_dict()
         token = parameter.get('token')
         token_to_user_(token)
+
+    @app.before_request
+    def invitation_records():
+        _invitation_records()
 
 
 def error_handler(app):

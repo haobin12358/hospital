@@ -19,6 +19,7 @@ class AUser(Resource):
             'list_family': self.cuser.list_family,
             'family': self.cuser.family,
             'list': self.cuser.list_user,
+            'secret': self.cuser.get_secret_user_id,
         }
         return apis
 
