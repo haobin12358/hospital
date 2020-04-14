@@ -82,6 +82,15 @@ class IdentifyingCode(Base):
     ICcode = Column(String(8), nullable=False)  # 获取到的验证码
 
 
+class UserInvitation(Base):
+    """用户邀请记录表"""
+    __tablename__ = 'UserInvitation'
+    UINid = Column(String(64), primary_key=True)
+    USInviter = Column(String(64), comment='邀请人')
+    USInvitee = Column(String(64), comment='被邀请人')
+    UINapi = Column(String(100), comment='触发此次记录的api')
+
+
 class UserHour(Base):
     """用户购买的课时"""
     __tablename__ = "UserHour"
