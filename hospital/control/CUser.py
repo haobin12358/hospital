@@ -21,6 +21,7 @@ from hospital.extensions.error_response import WXLoginError, ParamsError, NotFou
 from hospital.extensions.interface.user_interface import token_required, is_user, is_admin, admin_required
 from hospital.extensions.params_validates import parameter_required, validate_chinese, validate_arg
 from hospital.extensions.register_ext import db, ali_oss
+from hospital.extensions.request_handler import base_encode
 from hospital.extensions.success_response import Success
 from hospital.extensions.token_handler import usid_to_token
 from hospital.extensions.weixin import WeixinLogin
@@ -537,3 +538,10 @@ class CUser(object):
         if (time_now - res_code.createtime).seconds > 600:
             current_app.logger.info('time now = {}, send time = {}'.format(time_now, res_code.createtime))
             raise ParamsError('验证码已经过期')
+
+    @token_required
+    def get_secret_user_id(self):
+        """获取base64编码后的usid"""
+        usid = getattr(request, 'user').id
+        secret_usid = base_encode(usid)
+        return Success(data={'secret_usid': secret_usid})
