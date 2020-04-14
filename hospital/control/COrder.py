@@ -21,7 +21,7 @@ from hospital.extensions.weixin.pay import WeixinPayError
 from hospital.models import Coupon, Products, Classes, User, OrderMain, CouponUser, UserAddress, AddressProvince, \
     AddressCity, AddressArea, UserIntegral, OrderPay, UserHour, Setmeal
 from hospital.config.enums import ProductStatus, ProductType, CouponUserStatus, OrderMainStatus, \
-    OrderPayType, OrderMainType
+    OrderPayType, OrderMainType, PointTaskType
 
 
 class COrder(object):
@@ -272,6 +272,7 @@ class COrder(object):
         omintegralpayed = int(omintegralunit if omintegralunit else 0) * omnum
         if omintegralpayed:
             if omintegralpayed > int(user.USintegral):
+                # todo 增加积分兑换规则
                 raise ParamsError('用户积分不足')
             user.USintegral = int(user.USintegral) - omintegralpayed
             # 创建积分修改记录
@@ -279,7 +280,7 @@ class COrder(object):
                 'UIid': str(uuid.uuid1()),
                 'USid': user.USid,
                 'UIintegral': omintegralpayed,
-                'UIaction': 710,  # todo 修改为enum
+                'UIaction': PointTaskType.shopping_pay.value,
                 'UItype': 2,
                 'UItrue': 0,
             })
@@ -459,15 +460,15 @@ class COrder(object):
         return clname, truemount
 
     def _over_ordermain(self, omid):
+        om = OrderMain.query.filter(
+            OrderMain.OMid == omid, OrderMain.OMstatus == OrderMainStatus.ready.value,
+            OrderMain.isdelete == 0).first()
+        if not om:
+            current_app.logger.error('完成订单有误，订单ID不存在')
+            return
         # 完成订单
         with db.auto_commit():
-            om = OrderMain.query.filter(
-                OrderMain.OMid == omid, OrderMain.OMstatus == OrderMainStatus.ready.value,
-                OrderMain.isdelete == 0).first()
 
-            if not om:
-                current_app.logger.error('完成订单有误，订单ID不存在')
-                return
             omtype = om.OMtype
             if int(omtype) == OrderMainType.product.value and int(om.PRtype) == ProductType.package.value:
                 # 课时添加 - 积分商城
@@ -478,7 +479,6 @@ class COrder(object):
                     return
                 self._increase_uhnum(om.USid, classes.get('CLid'), omsmsum)
 
-                return
             if int(omtype) == OrderMainType.product.value and int(om.PRtype) == ProductType.coupon.value:
                 # 优惠券变为可用
                 CouponUser.query.filter(CouponUser.OMid == omid, CouponUser.isdelete == 0).update(
@@ -488,6 +488,12 @@ class COrder(object):
                 # 课时添加 - 课时套餐
                 omsmsum = int(om.SMnum) * int(om.OMnum)
                 self._increase_uhnum(om.USid, om.CLid, omsmsum)
+
+        # 积分任务添加 todo 购物积分增加待确认
+        current_app.logger.info('get omtype is {}'.format(omtype))
+        if int(omtype) == OrderMainType.product.value:
+            from .CConfig import CConfig
+            CConfig()._judge_point(PointTaskType.buy_product.value, 1, om.USid)
 
     def _increase_uhnum(self, usid, clid, omsmsum):
         uh = UserHour.query.filter(
