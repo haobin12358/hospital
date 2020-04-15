@@ -111,6 +111,9 @@ class CReview:
             rv_dict["RVid"] = rvid
             rv_instance = Review.create(rv_dict)
             db.session.add(rv_instance)
+        from .CConfig import CConfig
+        from ..config.enums import PointTaskType
+        CConfig()._judge_point(PointTaskType.review.value, 1, usid)
 
         return Success("评论成功")
 
