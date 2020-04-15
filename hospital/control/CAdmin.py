@@ -108,8 +108,6 @@ class CAdmin:
         elif data['adtype'] == 2:
             # 医生登录
             dc = Doctor.query.filter(Doctor.isdelete == 0, Doctor.DOtel == data.get('adname')).first()
-            print(dc.DOpassword)
-            print(generate_password_hash('635698'))
             if dc and check_password_hash(dc.DOpassword, data.get('adpassword')):
                 token = usid_to_token(dc.DOid, 'Doctor', 3, username=dc.DOname)
                 with db.auto_commit():
