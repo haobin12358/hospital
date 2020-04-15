@@ -220,4 +220,7 @@ class CEvaluation:
             }
             an_instance = Answer.create(an_dict)
             db.session.add(an_instance)
+        from .CConfig import CConfig
+        from ..config.enums import PointTaskType
+        CConfig()._judge_point(PointTaskType.make_evaluation.value, 1, usid)
         return Success(message="提交评测成功", data={"answer": answer})
