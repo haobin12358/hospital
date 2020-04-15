@@ -298,6 +298,10 @@ class CConfig:
         if not (is_admin() or is_hign_level_admin()):
             return AuthorityError()
         data = parameter_required('ptid', 'ptnumber', 'pttime', 'pticon')
+        if not data.get('ptnumber'):
+            data['ptnumber'] = 0
+        if not data.get('pttime'):
+            data['pttime'] = 0
         pt_dict = {
             "PTnumber": data.get('ptnumber'),
             "PTtime": data.get('pttime'),
