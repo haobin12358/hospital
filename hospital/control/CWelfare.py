@@ -13,6 +13,7 @@ from hospital.extensions.success_response import Success
 from hospital.extensions.request_handler import token_to_user_
 from hospital.extensions.params_validates import parameter_required
 from hospital.extensions.error_response import TimeError, AuthorityError
+from hospital.extensions.tasks import cancel_async_task, add_async_task, change_coupon_status
 from hospital.models.coupon import Coupon, CouponUser
 from hospital.config.enums import CouponStatus, CouponUserStatus
 
@@ -58,17 +59,26 @@ class CWelfare:
                 co_dict["COstatus"] = 501
                 co_instance = Coupon.create(co_dict)
                 msg = '添加成功'
+
+                # 添加优惠券到期时的定时任务
+                add_async_task(func=change_coupon_status, start_time=end_time,
+                               func_args=(co_dict['COid'],), conn_id='end_coupon{}'.format(co_dict['COid']))
             else:
                 """修改/删除"""
-                if start_time < datetime.datetime.now() < end_time:
-                    return AuthorityError()
                 co_instance = Coupon.query.filter(Coupon.COid == coid).first_('未找到该优惠券信息')
+                cancel_async_task(conn_id='end_coupon{}'.format(co_instance.COid))  # 取消已有定时任务
                 if data.get('delete'):
                     co_instance.update({'isdelete': 1})
                     msg = '删除成功'
                 else:
+                    if not (end_time > start_time >= datetime.datetime.now()):
+                        raise TimeError('结束时间需大于开始时间，开始时间需大于当前时间')
                     co_instance.update(co_dict, null='not')
                     msg = '编辑成功'
+
+                    # 重新添加优惠券到期时的定时任务
+                    add_async_task(func=change_coupon_status, start_time=end_time,
+                                   func_args=(co_instance.COid,), conn_id='end_coupon{}'.format(co_instance.COid))
             db.session.add(co_instance)
         return Success(message=msg)
 
