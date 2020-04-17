@@ -2,9 +2,10 @@
 from flask import current_app
 from sqlalchemy import false
 from datetime import timedelta
-from hospital.config.enums import ActivityStatus, UserActivityStatus, OrderMainStatus
+from hospital.config.enums import ActivityStatus, UserActivityStatus, OrderMainStatus, CourseStatus, CouponStatus, \
+    CouponUserStatus, ProductType, ProductStatus
 from hospital.extensions.register_ext import celery, db, conn
-from hospital.models import Activity, UserActivity, OrderMain, Course
+from hospital.models import Activity, UserActivity, OrderMain, Course, Coupon, CouponUser, Products
 
 
 def add_async_task(func, start_time, func_args, conn_id=None, queue='high_priority'):
@@ -54,6 +55,7 @@ def change_activity_status(acid):
                 ua.update({'UAstatus': UserActivityStatus.comment.value})
                 instance_list.append(ua)
             db.session.add_all(instance_list)
+        conn.delete('start_activity{}'.format(acid))
     except Exception as e:
         current_app.logger.error('Error: {}'.format(e))
     finally:
@@ -71,22 +73,67 @@ def change_course_status(coid, end=False):
                 current_app.logger.error('未找到该排班')
                 return
             if not end:  # 开始课程
-                if course.COstatus != 101:
+                if course.COstatus != CourseStatus.not_start.value:
                     current_app.logger.error('排班状态不为101, COstatus: {}'.format(course.COstatus))
                     return
-                course.update({'COstatus': 102})
+                course.update({'COstatus': CourseStatus.had_start.value})
                 current_app.logger.info('COstatus: 101 --> 102')
+                conn_id = 'start_course{}'.format(coid)
             else:  # 结束课程
-                if course.COstatus != 102:
+                if course.COstatus != CourseStatus.had_start.value:
                     current_app.logger.error('排班状态不为102, COstatus: {}'.format(course.COstatus))
                     return
-                course.update({'COstatus': 103})
+                course.update({'COstatus': CourseStatus.had_end.value})
                 current_app.logger.info('COstatus: 102 --> 103')
+                conn_id = 'end_course{}'.format(coid)
             db.session.add(course)
+        conn.delete(conn_id)
     except Exception as e:
         current_app.logger.error('Error: {}'.format(e))
     finally:
         current_app.logger.info(">>> 更改课程排班状态, 任务结束 coid:{} <<<".format(coid))
+
+
+@celery.task()
+def change_coupon_status(coid):
+    current_app.logger.info(">>> 更改优惠券状态 coid:{} <<<".format(coid))
+    instance_list = []
+    try:
+        with db.auto_commit():
+            coupon = Coupon.query.filter(Coupon.isdelete == false(), Coupon.COid == coid).first()
+            if not coupon:
+                current_app.logger.error('未找到该优惠券信息')
+                return
+            if coupon.COstatus != CouponStatus.use.value:
+                current_app.logger.error('状态不正确, COstatus: {}'.format(coupon.COstatus))
+                return
+
+            coupon.update({'COstatus': CouponStatus.end.value})
+            current_app.logger.info('COstatus: 501 --> 502')
+            instance_list.append(coupon)
+
+            user_coupons = CouponUser.query.filter(CouponUser.isdelete == false(), CouponUser.COid == coid,
+                                                   CouponUser.UCalreadyuse == CouponUserStatus.not_use.value
+                                                   ).all()
+            current_app.logger.info('该优惠券共 {} 条领取未使用记录'.format(len(user_coupons) if user_coupons else 0))
+            for us_coupon in user_coupons:
+                us_coupon.update({'UCalreadyuse': CouponUserStatus.had_delete.value})
+                instance_list.append(us_coupon)
+            db.session.add_all(instance_list)
+
+            # 同时下架仅用于该优惠券购买的商品
+            coupon_products = Products.query.filter(Products.isdelete == false(),
+                                                    Products.COid == coid,
+                                                    Products.PRtype == ProductType.coupon.value,
+                                                    Products.PRstatus == ProductStatus.usual.value
+                                                    ).update({'PRstatus': ProductStatus.off_shelves.value})
+            current_app.logger.info('同时下架 {} 款商品'.format(len(coupon_products) if coupon_products else 0))
+
+        conn.delete('end_coupon{}'.format(coid))
+    except Exception as e:
+        current_app.logger.error('Error: {}'.format(e))
+    finally:
+        current_app.logger.info(">>> 更改优惠券状态任务结束 coid:{} <<<".format(coid))
 
 
 @celery.task()
