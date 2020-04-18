@@ -9,7 +9,7 @@ import uuid
 import random
 import requests
 from datetime import datetime
-from sqlalchemy import false, true, or_
+from sqlalchemy import false, true, or_, func
 from flask import current_app, request
 from id_validator import validator
 from hospital.common.default_head import GithubAvatarGenerator
@@ -25,7 +25,8 @@ from hospital.extensions.request_handler import base_encode
 from hospital.extensions.success_response import Success
 from hospital.extensions.token_handler import usid_to_token
 from hospital.extensions.weixin import WeixinLogin
-from hospital.models import User, AddressProvince, AddressCity, AddressArea, UserAddress, Family, IdentifyingCode
+from hospital.models import User, AddressProvince, AddressCity, AddressArea, UserAddress, Family, IdentifyingCode, \
+    UserHour
 
 
 class CUser(object):
@@ -338,6 +339,9 @@ class CUser(object):
         for user in user_list:
             user.fill('usgender_zh', Gender(user.USgender).zh_value)
             user.fill('usbalance', 0)  # todo 对接会员卡
+            user.fill('uhnum', db.session.query(func.sum(UserHour.UHnum)
+                                                ).filter(UserHour.isdelete == false(),
+                                                         UserHour.USid == user.USid).scalar() or 0)
         return Success(data=user_list)
 
     @token_required
