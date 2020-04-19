@@ -74,7 +74,7 @@ class CEvaluation:
     def set_evaluationanswer(self):
         """设置题目选项"""
         data = parameter_required(('eiid', 'eaname', 'eaindex', 'eapoint') if not request.json.get('delete') else('eaid',))
-        if not (is_hign_level_admin() or is_admin()):
+        if not is_admin():
             return AuthorityError()
         ea_dict = {
             "EIid": data.get('eiid'),
