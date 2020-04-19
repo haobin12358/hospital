@@ -6,7 +6,7 @@ last update time:2020/3/13 03:53
 import uuid
 from flask import request, current_app
 from decimal import Decimal
-from hospital.extensions.interface.user_interface import is_hign_level_admin, is_admin
+from hospital.extensions.interface.user_interface import is_hign_level_admin, is_admin, token_required, is_user
 from hospital.extensions.register_ext import db
 from hospital.extensions.params_validates import parameter_required
 from hospital.extensions.request_handler import token_to_user_
@@ -19,7 +19,7 @@ class CEvaluation:
     def set_evaluation(self):
         """设置问卷主体"""
         data = parameter_required(('evname', 'evpicture', ) if not request.json.get('delete') else('evid',))
-        if not (is_hign_level_admin() or is_admin()):
+        if not is_admin():
             return AuthorityError()
         ev_dict = {
             "EVname": data.get('evname'),
@@ -103,7 +103,7 @@ class CEvaluation:
     def set_evaluationpoint(self):
         """设置分数区间"""
         data = parameter_required(('evid', 'epstart', 'epend', 'epanswer') if not request.json.get('delete') else('epid',))
-        if not (is_hign_level_admin() or is_admin()):
+        if not is_admin():
             return AuthorityError()
         if data.get('epstart') and data.get('epend'):
             epstart = Decimal(str(data.get('epstart') or 0))
@@ -150,9 +150,10 @@ class CEvaluation:
         evaluation = Evaluation.query.filter(Evaluation.isdelete == 0).all_with_page()
         return Success(message="获取评测列表成功", data=evaluation)
 
+    @token_required
     def get(self):
         """获取评测详情"""
-        args = parameter_required(('token', 'evid', ))
+        args = parameter_required(('evid', ))
         evid = args.get("evid")
         evaluation = Evaluation.query.filter(Evaluation.isdelete == 0, Evaluation.EVid == evid).first_("未找到该评测")
         evaluationitem = EvaluationItem.query.filter(EvaluationItem.isdelete == 0, EvaluationItem.EVid == evid)\
@@ -164,8 +165,8 @@ class CEvaluation:
                 .order_by(EvaluationAnswer.EAindex.asc()).all()
             item.fill("ea_list", evaluationanswer)
         evaluation.fill("ei_list", evaluationitem)
-        user = token_to_user_(args.get('token'))
-        if is_admin() or is_hign_level_admin():
+
+        if is_admin():
             ep_list = EvaluationPoint.query.filter(EvaluationPoint.isdelete == 0)\
                 .order_by(EvaluationPoint.EPstart.asc()).all()
             evaluation.fill("ep_list", ep_list)
@@ -175,11 +176,10 @@ class CEvaluation:
     def make_evaluation(self):
         """提交评测"""
         data = parameter_required(('evid', 'ei_list'))
-        if 'token' not in request.args.to_dict():
-            return AuthorityError("请先登录")
-        token = request.args.get('token')
-        user = token_to_user_(token)
-        usid = user.id
+        # user = getattr(request, 'user')
+        if not is_user():
+            raise AuthorityError('权限不足')
+        usid = getattr(request, 'user').id
         evid = data.get('evid')
         anid = str(uuid.uuid1())
         with db.auto_commit():

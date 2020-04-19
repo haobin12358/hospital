@@ -495,7 +495,7 @@ class CClasses:
         """
         token = request.args.get('token')
         user = token_to_user_(token)
-        if is_doctor():
+        if not is_doctor():
             return AuthorityError("无权限")
 
         with db.auto_commit():

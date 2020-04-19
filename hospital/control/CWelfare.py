@@ -109,7 +109,7 @@ class CWelfare:
         """获取用户优惠券（前台）"""
         args = parameter_required(('ucalreadyuse', ))
         # 601已使用602未使用603已过期604可使用
-        if is_user():
+        if not is_user():
             return AuthorityError()
         usid = request.user.id
         ucalreadyuse = int(args.get('ucalreadyuse'))
