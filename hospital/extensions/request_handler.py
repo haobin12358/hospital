@@ -68,15 +68,15 @@ def _invitation_records():
     secret_user_id = request.args.to_dict().get('secret_usid')
     if not secret_user_id:
         return
+    from hospital.extensions.interface.user_interface import is_user
+    if not is_user():
+        return
     current_app.logger.info('>>>>>>>>record invitation<<<<<<<<')
     try:
         inviter_id = base_decode(secret_user_id)
         current_app.logger.info(f'secret_usid --> inviter_id: {inviter_id}')
     except Exception as e:
         current_app.logger.error(f'解析secret_usid时出错： {e}')
-        return
-    from hospital.extensions.interface.user_interface import is_user
-    if not is_user():
         return
     usid = getattr(request, 'user').id
     if inviter_id == usid:

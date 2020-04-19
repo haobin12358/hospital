@@ -132,6 +132,8 @@ class CAssistance(object):
             except ValueError:
                 raise ParamsError('atstatus 参数错误')
             as_query = as_query.filter(Assistance.ATstatus == atstatus)
+        if args.get('usid'):
+            as_query = as_query.filter(Assistance.USid == args.get('usid'))
         assistance_list = as_query.order_by(Assistance.createtime.desc()).all_with_page()
         [self._fill_assistance(assistance) for assistance in assistance_list]
         return Success(data=assistance_list)
