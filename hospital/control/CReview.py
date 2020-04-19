@@ -4,15 +4,13 @@ create user: haobin12358
 last update time:2020/4/4 18:55
 """
 import uuid
-import datetime
 from decimal import Decimal
 from flask import request, current_app
-from hospital.extensions.interface.user_interface import admin_required, token_required
+from hospital.extensions.interface.user_interface import is_doctor, is_hign_level_admin, is_admin, is_user
 from hospital.extensions.register_ext import db
-from hospital.extensions.interface.user_interface import is_doctor, is_hign_level_admin, is_admin
 from hospital.extensions.success_response import Success
 from hospital.extensions.params_validates import parameter_required
-from hospital.extensions.error_response import ParamsError, AuthorityError, StatusError
+from hospital.extensions.error_response import AuthorityError, StatusError
 from hospital.models.departments import Doctor
 from hospital.models.review import Review, ReviewPicture
 from hospital.models.user import User
@@ -27,35 +25,37 @@ class CReview:
     def get_review(self):
         """获取评论"""
         """案例404id/医生id/活动id403/视频id405/评价人名称==>rvtype+rvtypeid/usname/doid"""
-        args = parameter_required(('token',))
-        user = request.user
-        if user.model == "Doctor":
+        """当前使用场景仅位于后台"""
+        args = parameter_required()
+        if is_admin():
+            filter_args = [Review.isdelete == 0]
+            if args.get('rvtype') and args.get('rvtypeid'):
+                filter_args.append(Review.RVtypeid == args.get('rvtypeid'))
+            if args.get('doid'):
+                filter_args.append(Review.DOid == args.get('doid'))
+            if args.get('usname'):
+                filter_args.append(Review.USname.like("%{0}%".format(args.get('usname'))))
+            review_list = Review.query.filter(*filter_args).order_by(Review.createtime.desc()).all_with_page()
+            for review in review_list:
+                if review["DOid"]:
+                    doctor = Doctor.query.filter(Doctor.DOid == review["DOid"], Doctor.isdelete == 0).first_("未找到医生信息")
+                    review.fill("doname", doctor["DOname"])
+                rp = ReviewPicture.query.filter(ReviewPicture.RVid == review["RVid"], ReviewPicture.isdelete == 0).all()
+                review.fill("createtime", review["createtime"])
+                review.fill("rp_list", rp)
+                rvtype = review["RVtype"]
+                review.fill("rvtype_zn", ReviewStatus(rvtype).zh_value)
+
+            return Success(message="获取评论成功", data=review_list)
+        else:
             return AuthorityError()
-        filter_args = [Review.isdelete == 0]
-        if args.get('rvtype') and args.get('rvtypeid'):
-            filter_args.append(Review.RVtypeid == args.get('rvtypeid'))
-        if args.get('doid'):
-            filter_args.append(Review.DOid == args.get('doid'))
-        if args.get('usname'):
-            filter_args.append(Review.USname.like("%{0}%".format(args.get('usname'))))
-        review_list = Review.query.filter(*filter_args).order_by(Review.createtime.desc()).all_with_page()
-        for review in review_list:
-            if review["DOid"]:
-                doctor = Doctor.query.filter(Doctor.DOid == review["DOid"], Doctor.isdelete == 0).first_("未找到医生信息")
-                review.fill("doname", doctor["DOname"])
-            rp = ReviewPicture.query.filter(ReviewPicture.RVid == review["RVid"], ReviewPicture.isdelete == 0).all()
-            review.fill("createtime", review["createtime"])
-            review.fill("rp_list", rp)
-            rvtype = review["RVtype"]
-            review.fill("rvtype_zn", ReviewStatus(rvtype).zh_value)
 
-        return Success(message="获取评论成功", data=review_list)
-
-    @token_required
     def set_review(self):
         """
         创建评论
         """
+        if not is_user():
+            return AuthorityError()
         data = parameter_required(("rvcontent", "rvtype", "rvtypeid", "rvnum"))
         usid = request.user.id
         rvtype = int(data.get('rvtype'))
@@ -119,8 +119,7 @@ class CReview:
 
     def delete(self):
         """删除评论"""
-        user = request.user
-        if user.model != "Admin":
+        if not is_admin():
             return AuthorityError()
         data = request.json
         with db.auto_commit():

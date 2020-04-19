@@ -3,17 +3,15 @@
 create user: haobin12358
 last update time:2020/3/13 03:53
 """
-import uuid, re
+import uuid
 from flask import request, current_app
 from decimal import Decimal
-from hospital.extensions.token_handler import usid_to_token
-from hospital.extensions.interface.user_interface import admin_required, is_hign_level_admin, is_admin
+from hospital.extensions.interface.user_interface import is_hign_level_admin, is_admin
 from hospital.extensions.register_ext import db
 from hospital.extensions.params_validates import parameter_required
 from hospital.extensions.request_handler import token_to_user_
 from hospital.extensions.success_response import Success
-from hospital.extensions.error_response import ParamsError, AuthorityError, PointError, EvaluationNumError
-from werkzeug.security import check_password_hash, generate_password_hash
+from hospital.extensions.error_response import AuthorityError, PointError, EvaluationNumError
 from hospital.models.evaluation import Evaluation, EvaluationAnswer, EvaluationItem, EvaluationPoint, Answer, AnswerItem
 
 class CEvaluation:
@@ -107,22 +105,29 @@ class CEvaluation:
         data = parameter_required(('evid', 'epstart', 'epend', 'epanswer') if not request.json.get('delete') else('epid',))
         if not (is_hign_level_admin() or is_admin()):
             return AuthorityError()
-        epstart = Decimal(str(data.get('epstart') or 0))
-        epend = Decimal(str(data.get('epend') or 0))
+        if data.get('epstart') and data.get('epend'):
+            epstart = Decimal(str(data.get('epstart') or 0))
+            epend = Decimal(str(data.get('epend') or 0))
+            if epstart >= epend:
+                return PointError("区间大小设置错误")
+        else:
+            epstart = 0
+            epend = 0
         ep_dict = {
             "EVid": data.get('evid'),
             "EPstart": epstart,
             "EPend": epend,
             "EPanswer": data.get('epanswer')
         }
-        if epstart >= epend:
-            return PointError("区间大小设置错误")
+        epid = data.get("epid")
         if data.get('evid'):
-            ep_list = EvaluationPoint.query.filter(EvaluationPoint.EVid == data.get('evid')).all()
+            filter_args = [EvaluationPoint.EVid == data.get('evid'), EvaluationPoint.isdelete == 0]
+            if epid:
+                filter_args.append(EvaluationPoint.EPid != epid)
+            ep_list = EvaluationPoint.query.filter(*filter_args).all()
             for ep in ep_list:
                 if not(epstart > Decimal(str(ep["EPend"] or 0)) or epend < Decimal(str(ep["EPstart"]) or 0)):
-                    return PointError()
-        epid = data.get("epid")
+                    return PointError('存在重叠分数区间')
         with db.auto_commit():
             if not epid:
                 # 新增
@@ -160,7 +165,7 @@ class CEvaluation:
             item.fill("ea_list", evaluationanswer)
         evaluation.fill("ei_list", evaluationitem)
         user = token_to_user_(args.get('token'))
-        if user.model == "Admin":
+        if is_admin() or is_hign_level_admin():
             ep_list = EvaluationPoint.query.filter(EvaluationPoint.isdelete == 0)\
                 .order_by(EvaluationPoint.EPstart.asc()).all()
             evaluation.fill("ep_list", ep_list)
