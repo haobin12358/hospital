@@ -8,7 +8,7 @@ import datetime
 from decimal import Decimal
 from flask import request, current_app
 from hospital.extensions.register_ext import db
-from hospital.extensions.interface.user_interface import is_hign_level_admin, is_admin
+from hospital.extensions.interface.user_interface import is_admin, is_user
 from hospital.extensions.success_response import Success
 from hospital.extensions.request_handler import token_to_user_
 from hospital.extensions.params_validates import parameter_required
@@ -23,7 +23,7 @@ class CWelfare:
         """
         创建/编辑/删除优惠券
         """
-        if not (is_admin() or is_hign_level_admin()):
+        if not is_admin():
             return AuthorityError('无权限')
         data = parameter_required(('costarttime', "coendtime", "cosubtration", "colimitnum")
                                   if not request.json.get('delete') else('coid',))
@@ -99,7 +99,7 @@ class CWelfare:
     def get(self):
         """获取优惠券详情（后台）"""
         args = parameter_required(('token', 'coid', ))
-        if not (is_admin() or is_hign_level_admin()):
+        if not is_admin():
             return AuthorityError('无权限')
         coupon = Coupon.query.filter(Coupon.isdelete == 0, Coupon.COid == args.get('coid')).first_("未找到该优惠券")
         coupon.fill("costatus_zh", CouponStatus(coupon.COstatus).zh_value)
@@ -107,12 +107,11 @@ class CWelfare:
 
     def userlist(self):
         """获取用户优惠券（前台）"""
-        args = parameter_required(('token', 'ucalreadyuse', ))
+        args = parameter_required(('ucalreadyuse', ))
         # 601已使用602未使用603已过期604可使用
-        user = token_to_user_(args.get('token'))
-        if user.model != "User":
+        if is_user():
             return AuthorityError()
-        usid = user.id
+        usid = request.user.id
         ucalreadyuse = int(args.get('ucalreadyuse'))
         if ucalreadyuse in [601, 602, 603]:
             coupon_list = CouponUser.query.filter(CouponUser.isdelete == 0, CouponUser.USid == usid,
