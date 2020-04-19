@@ -148,6 +148,7 @@ class OrderMainType(Enum):
     product = 0, '积分商城商品'
     setmeal = 1, '课时套餐'
 
+
 class PointTaskType(Enum):
     login = 701, '登录'
     invate_new = 702, '邀请新用户'
@@ -163,6 +164,7 @@ class PointTaskType(Enum):
     help_someone = 712, '报名公益援助'
     make_evaluation = 713, '参加健康评测'
     reget_point = 714, '积分退还'
+    shopping_pay = 715, '购物支出'
 
 
 if __name__ == '__main__':
