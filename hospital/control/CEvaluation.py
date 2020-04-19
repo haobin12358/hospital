@@ -19,7 +19,7 @@ class CEvaluation:
     def set_evaluation(self):
         """设置问卷主体"""
         data = parameter_required(('evname', 'evpicture', ) if not request.json.get('delete') else('evid',))
-        if not (is_hign_level_admin() or is_admin()):
+        if not is_admin():
             return AuthorityError()
         ev_dict = {
             "EVname": data.get('evname'),
@@ -103,7 +103,7 @@ class CEvaluation:
     def set_evaluationpoint(self):
         """设置分数区间"""
         data = parameter_required(('evid', 'epstart', 'epend', 'epanswer') if not request.json.get('delete') else('epid',))
-        if not (is_hign_level_admin() or is_admin()):
+        if not is_admin():
             return AuthorityError()
         if data.get('epstart') and data.get('epend'):
             epstart = Decimal(str(data.get('epstart') or 0))
@@ -150,9 +150,10 @@ class CEvaluation:
         evaluation = Evaluation.query.filter(Evaluation.isdelete == 0).all_with_page()
         return Success(message="获取评测列表成功", data=evaluation)
 
+    @token_required
     def get(self):
         """获取评测详情"""
-        args = parameter_required(('token', 'evid', ))
+        args = parameter_required(('evid', ))
         evid = args.get("evid")
         evaluation = Evaluation.query.filter(Evaluation.isdelete == 0, Evaluation.EVid == evid).first_("未找到该评测")
         evaluationitem = EvaluationItem.query.filter(EvaluationItem.isdelete == 0, EvaluationItem.EVid == evid)\
@@ -172,7 +173,6 @@ class CEvaluation:
 
         return Success(message="获取评测成功", data=evaluation)
 
-    @token_required
     def make_evaluation(self):
         """提交评测"""
         data = parameter_required(('evid', 'ei_list'))
