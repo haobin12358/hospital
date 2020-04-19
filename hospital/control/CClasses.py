@@ -7,9 +7,8 @@ import uuid
 import datetime
 from flask import request, current_app
 from decimal import Decimal
-from hospital.extensions.interface.user_interface import admin_required
 from hospital.extensions.register_ext import db
-from hospital.extensions.interface.user_interface import is_doctor, is_hign_level_admin, is_admin
+from hospital.extensions.interface.user_interface import is_doctor, is_hign_level_admin, is_admin, is_user
 from hospital.extensions.success_response import Success
 from hospital.extensions.request_handler import token_to_user_
 from hospital.extensions.params_validates import parameter_required
@@ -85,7 +84,7 @@ class CClasses:
         classes = Classes.query.filter(Classes.isdelete == 0, Classes.CLid == args.get('clid')).first_("未查到课程信息")
         if args.get('token'):
             user = token_to_user_(args.get('token'))
-            if user.model == "User":
+            if is_user():
                 doctor_list2 = []
                 doctor_list = Course.query.with_entities(Course.DOid).distinct().all_with_page()
                 for doctor in doctor_list:
@@ -417,7 +416,7 @@ class CClasses:
         if is_admin() or is_hign_level_admin():
             setmeal = Setmeal.query.filter(Setmeal.isdelete == 0).all_with_page()
             return Success(message="获取课时套餐成功", data=setmeal)
-        else:
+        elif is_user():
             args = parameter_required(('clid',))
             classes = Classes.query.filter(Classes.isdelete == 0, Classes.CLid == args.get('clid')).first_("未找到该课程信息")
             setmeal = Setmeal.query.filter(Setmeal.isdelete == 0, Setmeal.CLid == args.get("clid")).all()
@@ -430,6 +429,8 @@ class CClasses:
             })
             setmeal.sort(key=lambda x: x["SMnum"])
             return Success(message="获取课时套餐成功", data=setmeal)
+        else:
+            return AuthorityError('无权限')
 
     def get_subscribe_list(self):
         """
@@ -439,9 +440,9 @@ class CClasses:
         args = parameter_required(('token', ))
         token = args.get('token')
         user = token_to_user_(token)
-        if user.model == "User":
+        if is_user():
             filter_args.append(Subscribe.USid == user.id)
-        elif user.model == "Doctor":
+        elif is_doctor():
             filter_args.append(Subscribe.DOid == user.id)
         else:
             pass
@@ -494,7 +495,7 @@ class CClasses:
         """
         token = request.args.get('token')
         user = token_to_user_(token)
-        if user.model != 'Doctor':
+        if is_doctor():
             return AuthorityError("无权限")
 
         with db.auto_commit():

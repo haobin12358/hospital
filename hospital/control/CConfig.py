@@ -319,7 +319,7 @@ class CConfig:
         args = parameter_required(('token', ))
         filter_args = [UserIntegral.isdelete == 0]
         user = token_to_user_(args.get('token'))
-        if user.model == "User":
+        if is_user():
             filter_args.append(UserIntegral.USid == user.id)
             filter_args.append(UserIntegral.UItrue == 1)
         else:
