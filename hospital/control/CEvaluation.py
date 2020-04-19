@@ -6,7 +6,7 @@ last update time:2020/3/13 03:53
 import uuid
 from flask import request, current_app
 from decimal import Decimal
-from hospital.extensions.interface.user_interface import is_hign_level_admin, is_admin
+from hospital.extensions.interface.user_interface import is_hign_level_admin, is_admin, token_required, is_user
 from hospital.extensions.register_ext import db
 from hospital.extensions.params_validates import parameter_required
 from hospital.extensions.request_handler import token_to_user_
@@ -164,22 +164,22 @@ class CEvaluation:
                 .order_by(EvaluationAnswer.EAindex.asc()).all()
             item.fill("ea_list", evaluationanswer)
         evaluation.fill("ei_list", evaluationitem)
-        user = token_to_user_(args.get('token'))
-        if is_admin() or is_hign_level_admin():
+
+        if is_admin():
             ep_list = EvaluationPoint.query.filter(EvaluationPoint.isdelete == 0)\
                 .order_by(EvaluationPoint.EPstart.asc()).all()
             evaluation.fill("ep_list", ep_list)
 
         return Success(message="获取评测成功", data=evaluation)
 
+    @token_required
     def make_evaluation(self):
         """提交评测"""
         data = parameter_required(('evid', 'ei_list'))
-        if 'token' not in request.args.to_dict():
-            return AuthorityError("请先登录")
-        token = request.args.get('token')
-        user = token_to_user_(token)
-        usid = user.id
+        # user = getattr(request, 'user')
+        if not is_user():
+            raise AuthorityError('权限不足')
+        usid = getattr(request, 'user').id
         evid = data.get('evid')
         anid = str(uuid.uuid1())
         with db.auto_commit():
