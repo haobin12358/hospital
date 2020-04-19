@@ -195,5 +195,17 @@ class CVideo(object):
             filter_args.append(Video.VIname.ilike('%{}%'.format(viname)))
 
         video_list = Video.query.filter(*filter_args).order_by(*order_by_args).all_with_page()
-
+        # if
+        self._fill_series(video_list)
         return Success('获取成功', data=video_list)
+
+    def _fill_series(self, video_list):
+        for video in video_list:
+            if not video.SEid:
+                video.fill('SEname', '')
+                return
+            series = Series.query.filter(Series.SEid == video.SEid, Series.isdelete == 0).first()
+            if not series:
+                video.fill('SEname', '')
+                return
+            video.fill('SEname', series.SEname)
