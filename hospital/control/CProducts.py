@@ -10,7 +10,7 @@ from hospital.extensions.error_response import ParamsError, StatusError
 from hospital.extensions.params_validates import parameter_required
 from hospital.extensions.register_ext import db
 from hospital.models import Admin, Coupon, Products, Classes
-from hospital.config.enums import ProductStatus, ProductType, AdminStatus
+from hospital.config.enums import ProductStatus, ProductType, AdminStatus, CouponStatus
 
 
 class CProducts(object):
@@ -89,6 +89,14 @@ class CProducts(object):
                 prstatus = ProductStatus(int(str(prstatus))).value
             except:
                 raise ParamsError('商品状态参数异常')
+        if data.get('coid') and prtype == ProductType.coupon.value:
+            # 优惠券是否可用
+            Coupon.query.filter(Coupon.COid == data.get('coid'), Coupon.COstatus == CouponStatus.use.value,
+                                Coupon.isdelete == 0).first_('优惠券不可用')
+        if data.get('clid') and prtype == ProductType.package.value:
+            # 课程是否可用
+            Classes.query.filter(Classes.CLid == data.get('clid'), Classes.isdelete == 0).first_('课程不存在')
+
         if printegral:
             printegral = self._check_int(printegral, '商品积分')
         if prvipintegral:
