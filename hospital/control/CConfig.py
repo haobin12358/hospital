@@ -245,7 +245,7 @@ class CConfig:
         """获取任务列表"""
         args = parameter_required(('token', ))
         # user = token_to_user_(args.get('token'))
-        # user = getattr(request, 'user')
+        usid = getattr(request, 'user').id
         if is_doctor():
             return AuthorityError()
         else:
@@ -254,7 +254,7 @@ class CConfig:
                 # 前台需要增加是否可完成的状态
                 for pointtask in pointtask_list:
                     userintegral = UserIntegral.query.filter(UserIntegral.isdelete == 0, UserIntegral.UItrue == 0,
-                                                             UserIntegral.UItype == 1,
+                                                             UserIntegral.UItype == 1, UserIntegral.USid == usid,
                                                              UserIntegral.UIaction == pointtask.PTtype).all()
                     if userintegral:
                         pointtask.fill("is_get", 1)
@@ -266,6 +266,7 @@ class CConfig:
                         userintegral_end = UserIntegral.query.filter(UserIntegral.isdelete == 0,
                                                                      UserIntegral.UItrue == 1,
                                                                      UserIntegral.UItype == 1,
+                                                                     UserIntegral.USid == usid,
                                                                      UserIntegral.UIaction == pointtask.PTtype,
                                                                      UserIntegral.createtime >
                                                                      datetime.datetime(time_now.year,
@@ -283,6 +284,7 @@ class CConfig:
                         userintegral_end = UserIntegral.query.filter(UserIntegral.isdelete == 0,
                                                                      UserIntegral.UItrue == 1,
                                                                      UserIntegral.UItype == 1,
+                                                                     UserIntegral.USid == usid,
                                                                      UserIntegral.UIaction == pointtask.PTtype
                                                                      ).all()
                         if pttime <= len(userintegral_end):

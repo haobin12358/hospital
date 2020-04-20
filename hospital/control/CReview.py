@@ -25,9 +25,9 @@ class CReview:
     def get_review(self):
         """获取评论"""
         """案例404id/医生id/活动id403/视频id405/评价人名称==>rvtype+rvtypeid/usname/doid"""
-        """当前使用场景仅位于后台"""
+        """当前使用场景用于pc后台和前台业务页面，不涉及用户个人"""
         args = parameter_required()
-        if is_admin():
+        if is_admin() or is_user():
             filter_args = [Review.isdelete == 0]
             if args.get('rvtype') and args.get('rvtypeid'):
                 filter_args.append(Review.RVtypeid == args.get('rvtypeid'))
