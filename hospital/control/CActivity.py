@@ -111,7 +111,7 @@ class CActivity(object):
                         (remain.seconds % 3600) // 60) else f'{remain.seconds}秒'
                 ac.fill('remain_time', f'{remain_day}天' if remain_day else remain_str)
             if is_admin():
-                ac.fill('signed_number', self._ua_filter([UserActivity.ACid == ac.ACid, ]).count())
+                ac.fill('signed_number', f'{self._ua_filter([UserActivity.ACid == ac.ACid, ]).count()} / {ac.ACnumber}')
         return Success(data=ac_list)
 
     def _query_my_activity(self):
