@@ -116,7 +116,10 @@ def request_first_handler(app):
         current_app.logger.info('>>>>>>>>\n>>>>>>>>{}<<<<<<<<\n<<<<<<<<<<'.format('before request'))
         parameter = request.args.to_dict()
         token = parameter.get('token')
-        token_to_user_(token)
+        user = token_to_user_(token)
+        if token and not user:
+            from hospital.extensions.error_response import TokenError
+            raise TokenError('登录超时，请重新登录')
 
     @app.before_request
     def invitation_records():
