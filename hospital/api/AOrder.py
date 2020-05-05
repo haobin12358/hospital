@@ -18,5 +18,6 @@ class AOrder(Resource):
             'create': self.corder.create,
             'wechat_notify': self.corder.wechat_notify,
             'test_over_ordermain': self.corder.test_over_ordermain,
+            'send': self.corder.send,
         }
         return apis
