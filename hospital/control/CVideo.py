@@ -8,7 +8,7 @@ from hospital.extensions.success_response import Success
 from hospital.extensions.error_response import ParamsError
 from hospital.extensions.params_validates import parameter_required
 from hospital.extensions.register_ext import db
-from hospital.models import Series, Video
+from hospital.models import Series, Video, Review, Doctor
 
 
 class CVideo(object):
@@ -164,6 +164,22 @@ class CVideo(object):
         viid = data.get('viid')
         usid = getattr(request, 'user').id
         video = Video.query.filter(Video.VIid == viid, Video.isdelete == 0).first_('视频已删除')
+        # 添加 评论
+        reviews = Review.query.filter(
+            Review.RVtype == 405, Review.RVtypeid == video.VIid, Review.isdelete == 0).order_by(
+            Review.createtime.desc()).all()
+        for review in reviews:
+            review.add('createtime')
+        reviesw_count = len(reviews)
+
+        video.fill('reviesw_count', reviesw_count)
+        video.fill('reviews', reviews)
+        doctor = Doctor.query.filter(Doctor.DOid == video.DOid, Doctor.isdelete == 0).first()
+        if doctor:
+            video.fill('doname', doctor.DOname)
+            video.fill('dotitle', doctor.DOtitle)
+            video.fill('dotel', doctor.DOtel)
+
         if video.SEid:
             se_video_list = Video.query.filter(Video.SEid == video.SEid, Video.isdelete == 0).order_by(
                 Video.VIsort.asc(), Video.createtime.desc()).all()
@@ -201,6 +217,12 @@ class CVideo(object):
 
     def _fill_series(self, video_list):
         for video in video_list:
+            # 添加 评论数
+            reviesw_count = len(Review.query.filter(
+                Review.RVtype == 405, Review.RVtypeid == video.VIid, Review.isdelete == 0).all())
+
+            video.fill('reviesw_count', reviesw_count)
+
             if not video.SEid:
                 video.fill('SEname', '')
                 return
