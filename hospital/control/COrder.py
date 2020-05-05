@@ -39,7 +39,7 @@ class COrder(object):
             raise ParamsError('订单类型有误 {}'.format(omtype))
 
         if is_user():
-            filter_args.append(OrderMain.OMstatus == OrderMainStatus.ready.value)
+            filter_args.append(OrderMain.OMstatus >= OrderMainStatus.ready.value)
             filter_args.append(OrderMain.OMtype == omtype)
             filter_args.append(OrderMain.USid == usid)
         elif omstatus is not None:
@@ -525,3 +525,20 @@ class COrder(object):
         self._over_ordermain(omid)
 
         return Success('订单完结成功')
+
+    @admin_required
+    def send(self):
+        data = parameter_required('omids')
+        omids = data.get('omids')
+        if not omids or not isinstance(omids, list):
+            return Success('发货成功')
+        with db.auto_commit():
+            omlen = OrderMain.query.filter(
+                OrderMain.OMid.in_(omids), OrderMain.isdelete == 0,
+                OrderMain.OMstatus == OrderMainStatus.ready.value).update({
+                'OMstatus': OrderMainStatus.send.value}, synchronize_session=False)
+            current_app.logger.info('发货订单 {} 条， 修改成功 {} 条'.format(len(omids), omlen))
+
+        return Success('发货成功')
+
+

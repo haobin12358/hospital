@@ -135,6 +135,7 @@ class ProductType(Enum):
 class OrderMainStatus(Enum):
     wait_pay = 0, '待支付'
     ready = 30, '已完成'
+    send = 60, '已发货'
     cancle = -40, '已取消'
 
 
