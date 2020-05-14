@@ -16,6 +16,7 @@ class ARegister(Resource):
 
     def post(self, register):
         apis = {
-            'add': self.cregister.add_register
+            'add': self.cregister.add_register,
+            'set_register': self.cregister.set_register,
         }
         return apis
