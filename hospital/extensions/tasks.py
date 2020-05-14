@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 from flask import current_app
-from sqlalchemy import false
-from datetime import timedelta
+from sqlalchemy import false, or_
+from datetime import timedelta, datetime
 from hospital.config.enums import ActivityStatus, UserActivityStatus, OrderMainStatus, CourseStatus, CouponStatus, \
-    CouponUserStatus, ProductType, ProductStatus
+    CouponUserStatus, ProductType, ProductStatus, RegisterStatus
 from hospital.extensions.register_ext import celery, db, conn
-from hospital.models import Activity, UserActivity, OrderMain, Course, Coupon, CouponUser, Products
+from hospital.models import Activity, UserActivity, OrderMain, Course, Coupon, CouponUser, Products, Register
 
 
 def add_async_task(func, start_time, func_args, conn_id=None, queue='high_priority'):
@@ -148,6 +148,23 @@ def auto_cancle_order(omid):
     current_app.logger.info('订单自动取消{}'.format(dict(order_main)))
     corder = COrder()
     corder._cancle(order_main)
+
+
+@celery.task(name='auto_cancle_register')
+def auto_cancle_register():
+    now = datetime.now()
+    current_app.logger.info('开始取消今日预约 {}'.format(now))
+    try:
+        with db.auto_commit():
+            updatenum = Register.query.filter(
+                Register.isdelete == 0,
+                Register.REstatus < RegisterStatus.commenting.value,
+                or_((Register.REdate == now.date(), Register.REtansferDate == None),
+                    Register.REtansferDate == now.date()),
+            ).update({'REstatus': RegisterStatus.cancle.value}, synchronize_session=False)
+            current_app.logger.info('修改预约{}条'.format(updatenum))
+    except Exception as e:
+        current_app.logger.error('Error: {}'.format(e))
 
 
 if __name__ == '__main__':
