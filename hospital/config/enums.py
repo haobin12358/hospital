@@ -168,5 +168,10 @@ class PointTaskType(Enum):
     shopping_pay = 715, '购物支出'
 
 
+class RegisterAmOrPm(Enum):
+    am = 0, '上午'
+    pm = 1, '下午'
+
+
 if __name__ == '__main__':
     print(CourseStatus(101).zh_value)
