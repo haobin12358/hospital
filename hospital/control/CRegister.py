@@ -7,10 +7,10 @@ import uuid
 from sqlalchemy import or_, and_
 
 from hospital.config.enums import RegisterStatus, RegisterAmOrPm, DoctorMetiaType
-from hospital.config.timeformat import format_forweb_no_HMS, format_for_web_second
+from hospital.config.timeformat import format_forweb_no_HMS
 from hospital.extensions.interface.user_interface import token_required, is_user, is_doctor, admin_required
 from hospital.extensions.success_response import Success
-from hospital.extensions.error_response import ParamsError, AuthorityError
+from hospital.extensions.error_response import ParamsError
 from hospital.extensions.params_validates import parameter_required
 from hospital.extensions.register_ext import db
 from hospital.models import Register, Family, Departments, Doctor, DoctorMedia
