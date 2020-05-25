@@ -6,7 +6,7 @@ last update time:2020/3/13 03:53
 import uuid, re
 from flask import request, current_app
 from hospital.extensions.token_handler import usid_to_token
-from hospital.extensions.interface.user_interface import admin_required, is_hign_level_admin
+from hospital.extensions.interface.user_interface import admin_required, is_hign_level_admin, token_required, is_admin
 from hospital.extensions.register_ext import db
 from hospital.extensions.params_validates import parameter_required
 from hospital.extensions.request_handler import token_to_user_
@@ -279,3 +279,17 @@ class CAdmin:
                 "total_page": total_page,
                 "total_size": len(admin_list)
             }
+
+    @token_required
+    def refresh_token(self):
+        """刷新token"""
+        token = ''
+        if is_admin():
+            admin = Admin.query.filter(Admin.isdelete == 0, Admin.ADid == getattr(request, 'user').id).first()
+            if admin:
+                token = usid_to_token(admin.ADid, 'Admin', admin.ADlevel, username=admin.ADname)
+        else:
+            doctor = Doctor.query.filter(Doctor.isdelete == 0, Doctor.DOid == getattr(request, 'user').id).first()
+            if doctor:
+                token = usid_to_token(doctor.DOid, 'Doctor', 3, username=doctor.DOname)
+        return Success(data={'token': token})
