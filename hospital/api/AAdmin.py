@@ -19,7 +19,8 @@ class AAdmin(Resource):
             "admin_login": self.cadmin.admin_login,
             "update_admin_password": self.cadmin.update_admin_password,
             "delete_admin": self.cadmin.delete_admin,
-            "reset_password": self.cadmin.reset_password
+            "reset_password": self.cadmin.reset_password,
+            "refresh_token": self.cadmin.refresh_token,
         }
 
         return apis
