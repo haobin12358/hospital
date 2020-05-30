@@ -140,11 +140,11 @@ class CFile(object):
 
     @staticmethod
     def check_file_size():
-        max_file_size = 50 * 1024 * 1024
+        max_file_size = 200 * 1024 * 1024
         upload_file_size = request.content_length
         current_app.logger.info(">>>  Upload File Size is {0} MB <<<".format(round(upload_file_size / 1048576, 2)))
         if upload_file_size > max_file_size:
-            raise ParamsError("上传文件过大，请上传小于50MB的文件")
+            raise ParamsError("上传文件过大，请上传小于200MB的文件")
 
     @staticmethod
     def allowed_file(shuffix):
