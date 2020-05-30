@@ -35,9 +35,9 @@ def video2frames(pathin,  # 视频的路径
     fps = cap.get(cv2.CAP_PROP_FPS)  # 视频的帧率
     dur = n_frames / fps  # 视频的时间
     thumbnail_name_list = []
-    if int(dur) > 60:
-        os.remove(pathin)
-        raise ParamsError('视频时长不能超过60秒')
+    # if int(dur) > 60:
+    #     os.remove(pathin)
+    #     raise ParamsError('视频时长不能超过60秒')
     if int(dur) < 3:
         os.remove(pathin)
         raise ParamsError('视频时长不能少于3秒')
