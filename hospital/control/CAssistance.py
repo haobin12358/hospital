@@ -185,7 +185,8 @@ class CAssistance(object):
     @token_required
     def list_relatives(self):
         """获取申请人亲属"""
-        usid = getattr(request, 'user').id
+        usid = request.args.to_dict().get('usid') if is_admin() and request.args.to_dict().get('usid') else getattr(
+            request, 'user').id
         relatives = AssistanceRelatives.query.filter(AssistanceRelatives.isdelete == false(),
                                                      AssistanceRelatives.USid == usid
                                                      ).order_by(AssistanceRelatives.ARtype.asc(),
@@ -199,9 +200,10 @@ class CAssistance(object):
         """亲属详情"""
         args = parameter_required('arid')
         arid = args.get('arid')
-        usid = getattr(request, 'user').id
-        relative = self._exist_assistance_relative([AssistanceRelatives.USid == usid,
-                                                    AssistanceRelatives.ARid == arid], '未找到任何信息')
+        filter_args = [AssistanceRelatives.ARid == arid, ]
+        if is_user():
+            filter_args.append(AssistanceRelatives.USid == getattr(request, 'user').id)
+        relative = self._exist_assistance_relative(filter_args, '未找到任何信息')
         relative.fill('artype_zh', FamilyType(relative.ARtype).zh_value)
         return Success(data=relative)
 
