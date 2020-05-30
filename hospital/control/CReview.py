@@ -6,7 +6,7 @@ last update time:2020/4/4 18:55
 import uuid
 from decimal import Decimal
 from flask import request, current_app
-from hospital.extensions.interface.user_interface import is_doctor, is_hign_level_admin, is_admin, is_user
+from hospital.extensions.interface.user_interface import is_doctor, is_admin, is_user, token_required
 from hospital.extensions.register_ext import db
 from hospital.extensions.success_response import Success
 from hospital.extensions.params_validates import parameter_required
@@ -21,7 +21,7 @@ from hospital.config.enums import ReviewStatus
 
 
 class CReview:
-
+    @token_required
     def get_review(self):
         """获取评论"""
         """案例404id/医生id/活动id403/视频id405/评价人名称==>rvtype+rvtypeid/usname/doid"""
@@ -50,6 +50,7 @@ class CReview:
         else:
             return AuthorityError()
 
+    @token_required
     def set_review(self):
         """
         创建评论
@@ -117,6 +118,7 @@ class CReview:
 
         return Success("评论成功")
 
+    @token_required
     def delete(self):
         """删除评论"""
         if not is_admin():

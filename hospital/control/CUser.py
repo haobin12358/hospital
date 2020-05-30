@@ -238,7 +238,7 @@ class CUser(object):
         with db.auto_commit():
             if not uaid:  # 添加
                 parameter_required({'uaname': "姓名", 'uatel': "手机号码",
-                                    'uatext': "具体地址", 'aaid': "地址"}, datafrom=address_dict)
+                                    'uatext': "具体地址", 'aaid': "地址"}, datafrom=data)
                 if not re.match(r'^1[1-9][0-9]{9}$', address_dict['UAtel']):
                     raise ParamsError('请填写正确的手机号码')
                 address_dict['UAid'] = str(uuid.uuid1())
