@@ -7,7 +7,7 @@ class Products(Base):
     """
     商品
     """
-    ____tablename__ = 'Products'
+    __tablename__ = 'Products'
     PRid = Column(String(64), primary_key=True)
     PRtitle = Column(String(255), comment='商品名')
     PRtype = Column(Integer, default=0, comment='商品类型')
