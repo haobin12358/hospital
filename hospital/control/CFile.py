@@ -86,18 +86,12 @@ class CFile(object):
                 second_str = '0' + str(second) if second < 10 else str(second)
                 video_dur = minute_str + ':' + second_str
 
-                try:
-                    ali_oss.save(data=newFile, filename=data[1:])
-                except Exception as e:
-                    current_app.logger.error(">>>  视频上传到阿里云出错 : {}  <<<".format(e))
-                    raise ParamsError('上传视频失败，请稍后再试')
+                self.upload_to_oss(newFile, data[1:], '视频')
 
                 video_thumbnail_path = os.path.join(newPath, thum_name.get('thumbnail_name_list')[0])
 
-                try:
-                    ali_oss.save(data=video_thumbnail_path, filename=video_thum[1:])
-                except Exception as e:
-                    current_app.logger.error(">>>  视频预览图上传到阿里云出错 : {}  <<<".format(e))
+                self.upload_to_oss(video_thumbnail_path, video_thum[1:], '视频预览图')
+
             else:
                 upload_type = 'image'
                 video_thum = ''
@@ -111,17 +105,21 @@ class CFile(object):
                     raise ParamsError('图片格式错误，请检查后重新上传（请勿强制更改图片后缀名）')
                 data += '_' + thumbnail_img.split('_')[-1]
 
-                # 上传到七牛云，并删除本地压缩图
-                try:
-                    ali_oss.save(data=thumbnail_img, filename=data[1:])
-                    os.remove(str(newFile + '_' + thumbnail_img.split('_')[-1]))
-                except Exception as e:
-                    current_app.logger.error(">>>  图片上传到阿里云出错 : {}  <<<".format(e))
-                    raise ParamsError('上传图片失败，请稍后再试')
+                # 上传到oss
+                self.upload_to_oss(thumbnail_img, data[1:], '图片')
             current_app.logger.info(">>>  Upload File Path is  {}  <<<".format(data))
             return data, video_thum, video_dur, upload_type
         else:
             raise SystemError(u'上传有误, 不支持的文件类型 {}'.format(shuffix))
+
+    @staticmethod
+    def upload_to_oss(file_data, file_name, msg=''):
+        if current_app.config.get('IMG_TO_OSS'):
+            try:
+                ali_oss.save(data=file_data, filename=file_name)
+            except Exception as e:
+                current_app.logger.error(">>> {} 上传到OSS出错 : {}  <<<".format(msg, e))
+                raise ParamsError('服务器繁忙，请稍后再试')
 
     def remove(self):
         data = parameter_required(('img_url',))
