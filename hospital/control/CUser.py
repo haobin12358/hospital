@@ -20,7 +20,7 @@ from hospital.extensions.error_response import WXLoginError, ParamsError, NotFou
     AuthorityError
 from hospital.extensions.interface.user_interface import token_required, is_user, is_admin, admin_required
 from hospital.extensions.params_validates import parameter_required, validate_chinese, validate_arg
-from hospital.extensions.register_ext import db, ali_oss
+from hospital.extensions.register_ext import db
 from hospital.extensions.request_handler import base_encode
 from hospital.extensions.success_response import Success
 from hospital.extensions.token_handler import usid_to_token
@@ -132,10 +132,8 @@ class CUser(object):
             with open(filename, 'wb') as head:
                 head.write(data.content)
         # 头像上传到阿里oss
-        try:
-            ali_oss.save(data=filename, filename=filedbname[1:])
-        except Exception as e:
-            current_app.logger.error('头像转存ali oss出错 : {}'.format(e))
+        from hospital.control.CFile import CFile
+        CFile().upload_to_oss(filedbname, filedbname[1:], '头像')
         return filedbname
 
     @staticmethod

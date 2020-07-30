@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-HTTP_HOST = 'https://hospital.sanbinit.cn'
-API_HOST = 'https://hospital.sanbinit.cn'
-MEDIA_HOST = 'http://image.hospital.sanbinit.cn'
+HTTP_HOST = 'https://mini.hzfdetyy.com'
+API_HOST = 'https://mini.hzfdetyy.com'
+MEDIA_HOST = 'http://media.hzfdetyy.com'
 
