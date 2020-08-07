@@ -143,12 +143,12 @@ class COrder(object):
             pay_args = 'integralpay'
             self._over_ordermain(omid)
         elif not omintegralpayed:
-            # pay_args = self._pay_detail(opayno, float(truemount), body, openid=openid)
-            pay_args = 'wxpay'
+            pay_args = self._pay_detail(opayno, float(truemount), body, openid=openid)
+            # pay_args = 'wxpay'
             pay_type = OrderPayType.wx.value
         else:
-            # pay_args = self._pay_detail(opayno, float(truemount), body, openid=openid)
-            pay_args = 'wxpay'
+            pay_args = self._pay_detail(opayno, float(truemount), body, openid=openid)
+            # pay_args = 'wxpay'
             pay_type = OrderPayType.mix.value
 
         response = {

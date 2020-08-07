@@ -136,15 +136,11 @@ class CRegister(object):
         # todo 对接his
         data = {"callinglist": [
             {
-                "departmentname": "儿科",  # 科室名
-                "currentnum": "78"  # 当前号
-            },
-            {
-                "departmentname": "X放射科",  # 科室名
-                "currentnum": "76"  # 当前号
-            },
+                "departmentname": "未知",  # 科室名
+                "currentnum": "0"  # 当前号
+            }
         ],
-            "total": 3  # 共多少条记录
+            "total": 0  # 共多少条记录
         }
         callinglist = []
         for calling in data.get('callinglist'):
@@ -224,6 +220,25 @@ class CRegister(object):
             update_dict.setdefault('DOtitle', doctor.DOtitle)
             update_dict.setdefault('DOname', doctor.DOname)
             update_dict.setdefault('REstatus', RegisterStatus.commenting.value)
+            register.update(update_dict)
             db.session.add(register)
             return Success('设置主治医生成功')
+
+    @admin_required
+    def set_report(self):
+        data = parameter_required(('reid', 'rereport'))
+        reid, rereport = data.get('reid'), data.get('rereport')
+        with db.auto_commit():
+            register = Register.query.filter(Register.REid == reid, Register.isdelete == 0).first_('挂号记录已失效')
+            register.update({'REreports': rereport})
+            # register.REreports = rereport
+            db.session.add(register)
+
+
+        return Success('更新成功')
+
+    # @token_required
+    # def get_report(self):
+    #     if is_user():
+    #
 
