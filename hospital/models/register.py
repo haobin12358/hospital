@@ -26,3 +26,4 @@ class Register(Base):
     DOmedia = Column(Text, comment='医生图片')
     DOtitle = Column(String(255), comment='职称')
     DOid = Column(String(64), comment='医生ID')
+    REreports = Column(Text, url_list=True, comment='报告单列表')
