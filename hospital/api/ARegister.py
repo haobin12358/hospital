@@ -18,5 +18,6 @@ class ARegister(Resource):
         apis = {
             'add': self.cregister.add_register,
             'set_register': self.cregister.set_register,
+            'set_report': self.cregister.set_report,
         }
         return apis
