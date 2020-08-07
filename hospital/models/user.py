@@ -4,7 +4,7 @@
 create user: wiilz
 last update time:2020/3/28 22:22
 """
-from sqlalchemy import Integer, String, Text, Boolean, orm
+from sqlalchemy import Integer, String, Text, Boolean, orm, DECIMAL
 from hospital.extensions.base_model import Base, Column
 
 
@@ -17,6 +17,7 @@ class User(Base):
     USgender = Column(Integer, default=2, comment='性别 {0: unknown 1：male，2：female}')
     USlevel = Column(Integer, default=0, comment='vip等级')
     USintegral = Column(Integer, default=0, comment='用户积分')
+    USbalance = Column(DECIMAL(precision=28, scale=2), comment='用户账户余额')
     USopenid = Column(Text, comment='小程序 openid')
     USunionid = Column(Text, comment='统一 unionID')
     UStelphone = Column(String(16), comment="手机号")
@@ -72,6 +73,16 @@ class UserIntegral(Base):
     UIaction = Column(Integer, default=1, comment='积分变动原因')
     UItype = Column(Integer, default=1, comment='积分变动类型 1 收入 2 支出 3 退还')
     UItrue = Column(Integer, default=0, comment='是否领取 0 未领取 1已领取')
+
+
+class WalletRecord(Base):
+    """余额变动记录"""
+    __tablename__ = "WalletRecord"
+    WRid = Column(String(64), primary_key=True)
+    USid = Column(String(64), comment='用户id')
+    WRcash = Column(DECIMAL(precision=28, scale=2), comment='变动金额')
+    WRtype = Column(Integer, default=0, comment='0:充值 1:消费')
+    ContentId = Column(String(128), comment='关联id, 充值时: OPayid， 消费时: OMid')
 
 
 class IdentifyingCode(Base):
