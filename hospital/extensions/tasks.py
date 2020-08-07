@@ -20,6 +20,8 @@ def add_async_task(func, start_time, func_args, conn_id=None, queue='high_priori
     connid = conn_id if conn_id else str(func_args[0])
     current_app.logger.info(f'add async task: func_args:{func_args} | connid: {conn_id}, task_id: {task_id}')
     conn.set(connid, str(task_id))
+    if func_args == 'auto_cancle_order':
+        conn.expire(connid, 1850)
 
 
 def cancel_async_task(conn_id):

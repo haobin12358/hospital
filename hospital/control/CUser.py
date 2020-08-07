@@ -14,19 +14,19 @@ from flask import current_app, request
 from id_validator import validator
 from hospital.common.default_head import GithubAvatarGenerator
 from hospital.common.identifying_code import SendSMS
-from hospital.config.enums import FamilyRole, FamilyType, Gender
+from hospital.config.enums import FamilyRole, FamilyType, Gender, OrderPayType, WalletRecordType
 from hospital.config.secret import MiniProgramAppId, MiniProgramAppSecret
 from hospital.extensions.error_response import WXLoginError, ParamsError, NotFound, DumpliError, StatusError, \
     AuthorityError
 from hospital.extensions.interface.user_interface import token_required, is_user, is_admin, admin_required
-from hospital.extensions.params_validates import parameter_required, validate_chinese, validate_arg
-from hospital.extensions.register_ext import db
+from hospital.extensions.params_validates import parameter_required, validate_chinese, validate_arg, validate_price
+from hospital.extensions.register_ext import db, wx_pay
 from hospital.extensions.request_handler import base_encode
 from hospital.extensions.success_response import Success
 from hospital.extensions.token_handler import usid_to_token
 from hospital.extensions.weixin import WeixinLogin
 from hospital.models import User, AddressProvince, AddressCity, AddressArea, UserAddress, Family, IdentifyingCode, \
-    UserHour
+    UserHour, OrderPay, WalletRecord
 
 
 class CUser(object):
@@ -301,9 +301,9 @@ class CUser(object):
         if is_user():
             user = User.query.filter(User.isdelete == false(),
                                      User.USid == getattr(request, 'user').id).first_('未找到该用户信息')
-            user.fields = ['USname', 'USavatar', 'USgender', 'USlevel', 'UStelphone', 'USintegral']
+            user.fields = ['USname', 'USavatar', 'USgender', 'USlevel', 'UStelphone', 'USintegral', 'USbalance']
             user.fill('usgender_zh', Gender(user.USgender).zh_value)
-            user.fill('usbalance', 0)  # todo 对接会员卡
+            # user.fill('usbalance', 0)  # todo 对接会员卡
             user.UStelphone = str(user.UStelphone)[:3] + '****' + str(user.UStelphone)[7:]
         else:
             if not is_admin():
@@ -311,8 +311,45 @@ class CUser(object):
             args = parameter_required(('usid',))
             user = User.query.filter(User.isdelete == false(), User.USid == args.get('usid')).first_('未找到该用户信息')
             self._fill_user(user)
-            user.fill('usbalance', 0)  # todo 对接会员卡
+            # user.fill('usbalance', 0)  # todo 对接会员卡
         return Success(data=user)
+
+    @token_required
+    def recharge(self):
+        """余额充值"""
+        user = User.query.filter(User.isdelete == false(),
+                                 User.USid == getattr(request, 'user').id).first_('未找到该用户信息')
+        data = parameter_required(('cash_nums',))
+        cash_nums = validate_price(data.get('cash_nums'), can_zero=False)
+        from hospital.control.COrder import COrder
+        with db.auto_commit():
+            opayno = wx_pay.nonce_str
+            body = f'wallet_recharge_{datetime.strftime(datetime.now(), "%Y%m%d%H%M%S")}'
+            op_instance = OrderPay.create({
+                'OPayid': str(uuid.uuid1()),
+                'OPayno': opayno,
+                'OPayType': OrderPayType.wx.value,
+                'OPayMount': cash_nums,
+            })
+            db.session.add(op_instance)
+            pay_args = COrder()._pay_detail(opayno, cash_nums, body, openid=user.USopenid)
+            pay_type = OrderPayType.wx.value
+
+            wr = WalletRecord.create({
+                'WRid': str(uuid.uuid1()),
+                'USid': user.USid,
+                'WRcash': cash_nums,
+                'WRtype': WalletRecordType.recharge.value,
+                'ContentId': op_instance.OPayid,
+                'isdelete': True
+            })
+            db.session.add(wr)
+
+            response = {
+                'paytype': pay_type,
+                'args': pay_args
+            }
+        return Success('成功', data=response)
 
     @staticmethod
     def _fill_user(user):
