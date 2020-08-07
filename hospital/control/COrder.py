@@ -160,7 +160,26 @@ class COrder(object):
     def wechat_notify(self):
         """微信支付回调"""
         # todo
-        pass
+        data = wx_pay.to_dict(request.data)
+        if not wx_pay.check(data):
+            return wx_pay.reply(u"签名验证失败", False)
+        out_trade_no = data.get('out_trade_no')
+        current_app.logger.info("This is wechat_notify, opayno is {}".format(out_trade_no))
+        with db.auto_commit():
+            order_pay_instance = OrderPay.query.filter_by_({'OPayno': out_trade_no,
+                                                            'OPayType': OrderPayType.wx.value}).first_()
+            order_pay_instance.OPaytime = data.get('time_end')
+            order_pay_instance.OPaysn = data.get('transaction_id')  # 微信支付订单号
+            order_pay_instance.OPayJson = json.dumps(data)
+
+            order_mains = OrderMain.query.filter_by_({'OPayno': out_trade_no}).all()
+            for order_main in order_mains:
+                order_main.update({
+                    'OMstatus': OrderMainStatus.ready.value
+                })
+
+                current_app.logger.info('微信支付成功')
+        return wx_pay.reply("OK", True).decode()
 
     def pay(self):
         """订单发起支付"""
@@ -535,10 +554,8 @@ class COrder(object):
         with db.auto_commit():
             omlen = OrderMain.query.filter(
                 OrderMain.OMid.in_(omids), OrderMain.isdelete == 0,
-                OrderMain.OMstatus == OrderMainStatus.ready.value).update({
+                                           OrderMain.OMstatus == OrderMainStatus.ready.value).update({
                 'OMstatus': OrderMainStatus.send.value}, synchronize_session=False)
             current_app.logger.info('发货订单 {} 条， 修改成功 {} 条'.format(len(omids), omlen))
 
         return Success('发货成功')
-
-
