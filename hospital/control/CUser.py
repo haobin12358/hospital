@@ -133,7 +133,7 @@ class CUser(object):
                 head.write(data.content)
         # 头像上传到阿里oss
         from hospital.control.CFile import CFile
-        CFile().upload_to_oss(filedbname, filedbname[1:], '头像')
+        CFile().upload_to_oss(filename, filedbname[1:], '头像')
         return filedbname
 
     @staticmethod
