@@ -30,6 +30,7 @@ class AUser(Resource):
             'set_address': self.cuser.set_address,
             'set_family': self.cuser.set_family,
             'identifying_code': self.cuser.send_identifying_code,
+            'recharge': self.cuser.recharge,
         }
 
         return apis

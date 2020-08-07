@@ -150,6 +150,11 @@ class OrderMainType(Enum):
     setmeal = 1, '课时套餐'
 
 
+class WalletRecordType(Enum):
+    recharge = 1, '充值'
+    trade = 2, '消费'
+
+
 class PointTaskType(Enum):
     login = 701, '登录'
     invate_new = 702, '邀请新用户'
