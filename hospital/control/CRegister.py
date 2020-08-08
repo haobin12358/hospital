@@ -23,7 +23,8 @@ class CRegister(object):
     @token_required
     def list(self):
         data = parameter_required()
-        restatus = data.get('restatus')
+        restatus = int(data.get('restatus', 0))
+        current_app.logger.info('get restatus {} {}'.format(restatus, type(restatus)))
         filter_args = [Register.isdelete == 0, ]
         if is_user():
             usid = getattr(request, 'user').id
