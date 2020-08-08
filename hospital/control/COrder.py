@@ -145,6 +145,8 @@ class COrder(object):
             self._over_ordermain(omid)
         elif not omintegralpayed:
             if wallet_payment and omtype == OrderMainType.setmeal.value:
+                if truemount > user.USbalance:
+                    raise StatusError('用户余额不足: {}'.format(user.USbalance))
                 self._wallet_trade_setmeal(user, truemount, omid)
                 pay_args = 'wallet_payment'
                 pay_type = OrderPayType.wallet.value
@@ -177,6 +179,12 @@ class COrder(object):
             # 扣除金额
             user.USbalance = user.USbalance - truemount
             db.session.add(user)
+            om = OrderMain.query.filter(OrderMain.isdelete == 0, OrderMain.OMid == omid,
+                                        OrderMain.OMstatus == OrderMainStatus.wait_pay.value).first()
+            if not om:
+                current_app.logger.error(f'订单状态错误, 未找到 omid: {omid}')
+                return
+            om.OMstatus = OrderMainStatus.ready.value
         self._over_ordermain(omid)
 
     def wechat_notify(self):
@@ -193,14 +201,28 @@ class COrder(object):
             order_pay_instance.OPaytime = data.get('time_end')
             order_pay_instance.OPaysn = data.get('transaction_id')  # 微信支付订单号
             order_pay_instance.OPayJson = json.dumps(data)
-
+            omids = []
             order_mains = OrderMain.query.filter_by_({'OPayno': out_trade_no}).all()
             for order_main in order_mains:
                 order_main.update({
                     'OMstatus': OrderMainStatus.ready.value
                 })
-
+                omids.append(order_main.OMid)
                 current_app.logger.info('微信支付成功')
+
+            # 余额充值
+            if not order_mains:
+                wallet_recharge = WalletRecord.query.filter(WalletRecord.ContentId == order_pay_instance.OPayid).first()
+                if wallet_recharge:
+                    current_app.logger.info('充值余额')
+                    user = User.query.filter(User.isdelete == 0, User.USid == wallet_recharge.USid).first()
+                    if user:
+                        wallet_recharge.isdelete = False
+                        user.USbalance = user.USbalance + wallet_recharge.WRcash
+                        current_app.logger.info('微信支付,充值余额成功')
+
+        # 处理订单中其余数据变动
+        [self._over_ordermain(omid) for omid in omids]
         return wx_pay.reply("OK", True).decode()
 
     def pay(self):
