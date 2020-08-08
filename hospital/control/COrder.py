@@ -19,9 +19,9 @@ from hospital.extensions.register_ext import db, wx_pay
 from hospital.extensions.tasks import add_async_task
 from hospital.extensions.weixin.pay import WeixinPayError
 from hospital.models import Coupon, Products, Classes, User, OrderMain, CouponUser, UserAddress, AddressProvince, \
-    AddressCity, AddressArea, UserIntegral, OrderPay, UserHour, Setmeal
+    AddressCity, AddressArea, UserIntegral, OrderPay, UserHour, Setmeal, WalletRecord
 from hospital.config.enums import ProductStatus, ProductType, CouponUserStatus, OrderMainStatus, \
-    OrderPayType, OrderMainType, PointTaskType
+    OrderPayType, OrderMainType, PointTaskType, WalletRecordType
 
 
 class COrder(object):
@@ -80,6 +80,7 @@ class COrder(object):
         smid = data.get('smid')
         clid = data.get('clid')
         omtype = data.get('omtype')
+        wallet_payment = True if str(data.get('wallet_payment')) == '1' else False
 
         omid = str(uuid.uuid1())
 
@@ -143,9 +144,14 @@ class COrder(object):
             pay_args = 'integralpay'
             self._over_ordermain(omid)
         elif not omintegralpayed:
-            pay_args = self._pay_detail(opayno, float(truemount), body, openid=openid)
-            # pay_args = 'wxpay'
-            pay_type = OrderPayType.wx.value
+            if wallet_payment and omtype == OrderMainType.setmeal.value:
+                self._wallet_trade_setmeal(user, truemount, omid)
+                pay_args = 'wallet_payment'
+                pay_type = OrderPayType.wallet.value
+            else:
+                pay_args = self._pay_detail(opayno, float(truemount), body, openid=openid)
+                # pay_args = 'wxpay'
+                pay_type = OrderPayType.wx.value
         else:
             pay_args = self._pay_detail(opayno, float(truemount), body, openid=openid)
             # pay_args = 'wxpay'
@@ -156,6 +162,22 @@ class COrder(object):
             'args': pay_args
         }
         return Success('下单成功', data=response)
+
+    def _wallet_trade_setmeal(self, user, truemount, omid):
+        """余额支付购买课时"""
+        # 增加记录
+        with db.auto_commit():
+            wr = WalletRecord.create({'WRid': str(uuid.uuid1()),
+                                      'USid': user.USid,
+                                      'WRcash': truemount,
+                                      'WRtype': WalletRecordType.trade.value,
+                                      'ContentId': omid,
+                                      })
+            db.session.add(wr)
+            # 扣除金额
+            user.USbalance = user.USbalance - truemount
+            db.session.add(user)
+        self._over_ordermain(omid)
 
     def wechat_notify(self):
         """微信支付回调"""

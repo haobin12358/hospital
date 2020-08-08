@@ -143,6 +143,7 @@ class OrderPayType(Enum):
     wx = 0, '微信'
     mix = 5, '组合支付'
     integral = 10, '积分'
+    wallet = 20, '余额支付'
 
 
 class OrderMainType(Enum):
