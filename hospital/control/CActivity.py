@@ -73,6 +73,7 @@ class CActivity(object):
                     # 重新添加异步任务
                     add_async_task(func=change_activity_status, start_time=acstarttime,
                                    func_args=(activity.ACid,), conn_id='start_activity{}'.format(activity.ACid))
+                    ac_dict['ACstatus'] = ActivityStatus.ready.value
                     activity.update(ac_dict)
                     msg = '更新成功'
             db.session.add(activity)

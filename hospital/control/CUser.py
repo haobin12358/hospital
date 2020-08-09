@@ -304,7 +304,7 @@ class CUser(object):
             user.fields = ['USname', 'USavatar', 'USgender', 'USlevel', 'UStelphone', 'USintegral', 'USbalance']
             user.fill('usgender_zh', Gender(user.USgender).zh_value)
             # user.fill('usbalance', 0)  # todo 对接会员卡
-            user.UStelphone = str(user.UStelphone)[:3] + '****' + str(user.UStelphone)[7:]
+            user.UStelphone = str(user.UStelphone)[:3] + '****' + str(user.UStelphone)[7:] if user.UStelphone else ''
         else:
             if not is_admin():
                 raise AuthorityError
