@@ -366,6 +366,14 @@ class CClasses:
         with db.auto_commit():
             su_instance = Subscribe.create(su_dict)
             db.session.add(su_instance)
+            userhour_instance = UserHour.query.filter(UserHour.USid == user_id, UserHour.isdelete == 0,
+                                                  UserHour.CLid == course.CLid, UserHour.UHnum > 0).first()
+            userhour_dict = {
+                "UHid": userhour_instance.UHid,
+                "UHnum": userhour_instance.UHnum - 1
+            }
+            userhour_instance.update(userhour_dict, null="not")
+            db.session.add(userhour_instance)
 
         return Success("预约成功")
 
@@ -419,16 +427,19 @@ class CClasses:
         elif is_user():
             args = parameter_required(('clid',))
             classes = Classes.query.filter(Classes.isdelete == 0, Classes.CLid == args.get('clid')).first_("未找到该课程信息")
-            setmeal = Setmeal.query.filter(Setmeal.isdelete == 0, Setmeal.CLid == args.get("clid")).all()
-            setmeal.append({
-                "SMid": "1",
-                "CLid": args.get('clid'),
-                "CLname": classes["CLname"],
-                "SMnum": 1,
-                "SMprice": classes["CLprice"]
+            setmeal_list = []
+            setmeal_list.append({
+                "smid": "1",
+                "clid": args.get('clid'),
+                "clname": classes["CLname"],
+                "smnum": 1,
+                "smprice": classes["CLprice"]
             })
+            setmeal = Setmeal.query.filter(Setmeal.isdelete == 0, Setmeal.CLid == args.get("clid")).all()
             setmeal.sort(key=lambda x: x["SMnum"])
-            return Success(message="获取课时套餐成功", data=setmeal)
+            for setmeal_one in setmeal:
+                setmeal_list.append(setmeal_one)
+            return Success(message="获取课时套餐成功", data=setmeal_list)
         else:
             return AuthorityError('无权限')
 
