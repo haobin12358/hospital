@@ -476,13 +476,13 @@ class COrder(object):
     def _create_setmeal_order(self, smid, clid, omid, user, uc, omnum, opayno):
         decimal_omnum = Decimal(omnum)
         if smid == '1':
-            cl = Classes.queury.filter(Classes.CLid == clid, Classes.isdelete == 0).first_('课程已结束')
+            cl = Classes.query.filter(Classes.CLid == clid, Classes.isdelete == 0).first_('课程已结束')
             # trueunit = sm.SMprice
             trueunit = (Decimal(cl.CLprice) if cl.CLprice else Decimal(0))
             smnum = 1
             clname = cl.CLname
         elif smid == "2":
-            cl = Classes.queury.filter(Classes.CLid == clid, Classes.isdelete == 0).first_('课程已结束')
+            cl = Classes.query.filter(Classes.CLid == clid, Classes.isdelete == 0).first_('课程已结束')
             smnum = decimal_omnum
             trueunit = (Decimal(cl.CLprice) if cl.CLprice else Decimal(0))
             clname = cl.CLname
