@@ -231,7 +231,7 @@ class CRegister(object):
         reid, rereport = data.get('reid'), data.get('rereport')
         with db.auto_commit():
             register = Register.query.filter(Register.REid == reid, Register.isdelete == 0).first_('挂号记录已失效')
-            register.update({'REreports': rereport})
+            register.update({'REreports': rereport, 'REstatus': 3})
             # register.REreports = rereport
             db.session.add(register)
 
