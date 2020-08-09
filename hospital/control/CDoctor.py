@@ -276,3 +276,4 @@ class CDoctor(object):
             doctor.fill('CONlimit', con.CONlimit)
             doctor.fill('CONstatus', con.CONstatus)
             doctor.fill('CONstatus_zh', ConsultationStatus(con.CONstatus).zh_value)
+            doctor.fill("CONnote", con.CONnote)
