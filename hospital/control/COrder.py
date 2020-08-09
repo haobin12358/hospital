@@ -89,15 +89,17 @@ class COrder(object):
             now = datetime.now()
 
             user = User.query.filter(User.USid == usid, User.isdelete == 0).first_('token过期, 请刷新')
-            ua = UserAddress.query.filter(
-                UserAddress.UAid == uaid, UserAddress.USid == usid, UserAddress.isdelete == 0).first_('地址已删除')
-
-            apname, acname, aaname = db.session.query(
-                AddressProvince.APname, AddressCity.ACname, AddressArea.AAname).filter(
-                AddressArea.AAid == ua.AAid, AddressCity.ACid == AddressArea.ACid,
-                AddressProvince.APid == AddressCity.APid, ).first()
-
-            omrecvaddress = '{}{}{}{}'.format(apname, acname, aaname, ua.UAtext)
+            if omtype == OrderMainType.product.value:
+                ua = UserAddress.query.filter(
+                    UserAddress.UAid == uaid, UserAddress.USid == usid, UserAddress.isdelete == 0).first_('地址已删除')
+                apname, acname, aaname = db.session.query(
+                    AddressProvince.APname, AddressCity.ACname, AddressArea.AAname).filter(
+                    AddressArea.AAid == ua.AAid, AddressCity.ACid == AddressArea.ACid,
+                    AddressProvince.APid == AddressCity.APid, ).first()
+                omrecvaddress = '{}{}{}{}'.format(apname, acname, aaname, ua.UAtext)
+            else:
+                ua = None
+                omrecvaddress = None
 
             uc = None
             if ucid:
@@ -125,8 +127,15 @@ class COrder(object):
                     prid, omid, omnum, user, opayno, ua, omrecvaddress, uc)
             elif omtype == OrderMainType.setmeal.value:
                 omintegralpayed = 0
+                if smid == "1":
+                    omnum = 1
+                elif smid == "2":
+                    pass
+                else:
+                    setmeal = Setmeal.query.filter(Setmeal.SMid == smid, Setmeal.isdelete == 0).first()
+                    omnum = setmeal.SMnum
                 body, truemount = self._create_setmeal_order(
-                    smid, clid, omid, user, uc, omnum, opayno, ua, omrecvaddress)
+                    smid, clid, omid, user, uc, omnum, opayno)
             else:
                 raise ParamsError('订单创建异常')
 
@@ -464,21 +473,27 @@ class COrder(object):
             })
         db.session.add(uh)
 
-    def _create_setmeal_order(self, smid, clid, omid, user, uc, omnum, opayno, ua, omrecvaddress):
+    def _create_setmeal_order(self, smid, clid, omid, user, uc, omnum, opayno):
         decimal_omnum = Decimal(omnum)
-        if smid != '1':
+        if smid == '1':
+            cl = Classes.queury.filter(Classes.CLid == clid, Classes.isdelete == 0).first_('课程已结束')
+            # trueunit = sm.SMprice
+            trueunit = (Decimal(cl.CLprice) if cl.CLprice else Decimal(0))
+            smnum = 1
+            clname = cl.CLname
+        elif smid == "2":
+            cl = Classes.queury.filter(Classes.CLid == clid, Classes.isdelete == 0).first_('课程已结束')
+            smnum = decimal_omnum
+            trueunit = (Decimal(cl.CLprice) if cl.CLprice else Decimal(0))
+            clname = cl.CLname
+        else:
             sm = Setmeal.query.join(Classes, Classes.CLid == Setmeal.CLid).filter(
                 Setmeal.SMid == smid, Setmeal.CLid == clid,
                 Setmeal.isdelete == 0, Classes.isdelete == 0).first_('课时套餐已下架')
             smnum = sm.SMnum
             clname = sm.CLname
             trueunit = (Decimal(sm.SMprice) if sm.SMprice else Decimal(0))
-        else:
-            cl = Classes.queury.filter(Classes.CLid == clid, Classes.isdelete == 0).first_('课程已结束')
-            # trueunit = sm.SMprice
-            trueunit = (Decimal(cl.CLprice) if cl.CLprice else Decimal(0))
-            smnum = 1
-            clname = cl.CLname
+
 
         mount = truemount = trueunit * decimal_omnum
         ucid = ''
@@ -508,9 +523,9 @@ class COrder(object):
             'OMmount': mount,
             'OMtrueMount': truemount,
             'OMstatus': omstatus,
-            'OMrecvPhone': ua.UAtel,
-            'OMrecvName': ua.UAname,
-            'OMrecvAddress': omrecvaddress,
+            'OMrecvPhone': None,
+            'OMrecvName': None,
+            'OMrecvAddress': None,
             'OMnum': omnum,
             'SMid': smid,
             'CLid': clid,
