@@ -135,7 +135,7 @@ class COrder(object):
                     setmeal = Setmeal.query.filter(Setmeal.SMid == smid, Setmeal.isdelete == 0).first()
                     omnum = setmeal.SMnum
                 body, truemount = self._create_setmeal_order(
-                    smid, clid, omid, user, uc, omnum, opayno)
+                    smid, clid, omid, user, uc, omnum, opayno, wallet_payment)
             else:
                 raise ParamsError('订单创建异常')
 
@@ -473,7 +473,7 @@ class COrder(object):
             })
         db.session.add(uh)
 
-    def _create_setmeal_order(self, smid, clid, omid, user, uc, omnum, opayno):
+    def _create_setmeal_order(self, smid, clid, omid, user, uc, omnum, opayno, wallet_payment):
         decimal_omnum = Decimal(omnum)
         if smid == '1':
             cl = Classes.query.filter(Classes.CLid == clid, Classes.isdelete == 0).first_('课程已结束')
@@ -494,7 +494,6 @@ class COrder(object):
             clname = sm.CLname
             trueunit = (Decimal(sm.SMprice) if sm.SMprice else Decimal(0))
 
-
         mount = truemount = trueunit * decimal_omnum
         ucid = ''
         if uc:
@@ -513,6 +512,14 @@ class COrder(object):
 
         if truemount == 0:
             omstatus = OrderMainStatus.ready.value
+        else:
+            op_instance = OrderPay.create({
+                'OPayid': str(uuid.uuid1()),
+                'OPayno': opayno,
+                'OPayType': OrderPayType.wx.value if not wallet_payment else OrderPayType.wallet.value,
+                'OPayMount': truemount,
+            })
+            db.session.add(op_instance)
         self._increase_smnum(user.USid, clid, smnum, omnum, omstatus)
         ordermain = OrderMain.create({
             'OMid': omid,
