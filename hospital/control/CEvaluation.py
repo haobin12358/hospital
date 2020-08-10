@@ -167,7 +167,7 @@ class CEvaluation:
         evaluation.fill("ei_list", evaluationitem)
 
         if is_admin():
-            ep_list = EvaluationPoint.query.filter(EvaluationPoint.isdelete == 0)\
+            ep_list = EvaluationPoint.query.filter(EvaluationPoint.isdelete == 0, EvaluationPoint.EVid == evid)\
                 .order_by(EvaluationPoint.EPstart.asc()).all()
             evaluation.fill("ep_list", ep_list)
 
@@ -184,7 +184,7 @@ class CEvaluation:
         anid = str(uuid.uuid1())
         with db.auto_commit():
             point = Decimal(0.0)
-            evaluationitem_all = EvaluationItem.query.filter(EvaluationItem.isdelete == 0).all()
+            evaluationitem_all = EvaluationItem.query.filter(EvaluationItem.isdelete == 0, EvaluationItem.EVid == evid).all()
             if len(evaluationitem_all) != len(data.get('ei_list')):
                 return EvaluationNumError()
             for ei in data.get('ei_list'):
