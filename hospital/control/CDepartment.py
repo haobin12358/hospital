@@ -71,7 +71,8 @@ class CDepartment(object):
         db.session.add_all(symptom_list)
 
         # 删除多余
-        Symptom.query.filter(Symptom.SYid.notin_(syid_list), Symptom.isdelete == 0).delete_(synchronize_session=False)
+        Symptom.query.filter(Symptom.SYid.notin_(syid_list), Symptom.isdelete == 0,
+                             Symptom.DEid == dep.DEid).delete_(synchronize_session=False)
 
     def list(self):
         data = parameter_required('index')
