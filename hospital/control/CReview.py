@@ -14,7 +14,7 @@ from hospital.extensions.error_response import AuthorityError, StatusError
 from hospital.models.departments import Doctor
 from hospital.models.review import Review, ReviewPicture
 from hospital.models.user import User
-from hospital.models.classes import Course
+from hospital.models.classes import Course, Subscribe
 from hospital.models.register import Register
 from hospital.models.video import Video
 from hospital.config.enums import ReviewStatus
@@ -63,7 +63,8 @@ class CReview:
         rvtypeid = data.get('rvtypeid')
         if rvtype == 401:
             """课程"""
-            classes = Course.query.filter(Course.COid == rvtypeid).first_("未找到该课程排班")
+            subscribe = Subscribe.query.filter(Subscribe.SUid == rvtypeid).first_("未找到预约信息")
+            classes = Course.query.filter(Course.COid == subscribe.COid).first_("未找到该课程排班")
             doid = classes["DOid"]
         elif rvtype == 402:
             """挂诊"""
@@ -98,9 +99,23 @@ class CReview:
         else:
             rppicture_list = []
         with db.auto_commit():
-            if rvtype == 403:
+            if rvtype == 401:
+                subscribe_instance = Subscribe.query.filter(Subscribe.SUid == rvtypeid).first_("未找到预约信息")
+                subscribe_instance.update({
+                    "SUstatus": 203
+                })
+                db.session.add(subscribe_instance)
+            elif rvtype == 402:
+                register_instance = Register.query.filter(Register.REid == rvtypeid).first_("未找到该挂诊信息")
+                register_instance.update({
+                    "REstatus": 4
+                })
+                db.session.add(register_instance)
+            elif rvtype == 403:
                 #  更改用户活动状态为已评价
                 rv_dict["RVtypeid"] = self._change_user_activity_comment_status(rvtypeid, usid)
+            else:
+                pass
             for repicture in rppicture_list:
                 rp_dict = {
                     "RPid": str(uuid.uuid1()),
