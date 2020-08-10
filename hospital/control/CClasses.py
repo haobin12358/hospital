@@ -8,7 +8,8 @@ import datetime
 from flask import request, current_app
 from decimal import Decimal
 from hospital.extensions.register_ext import db
-from hospital.extensions.interface.user_interface import is_doctor, is_hign_level_admin, is_admin, is_user
+from hospital.extensions.interface.user_interface import is_doctor, is_hign_level_admin, is_admin, is_user, \
+    token_required, doctor_required
 from hospital.extensions.success_response import Success
 from hospital.extensions.request_handler import token_to_user_
 from hospital.extensions.params_validates import parameter_required
@@ -24,6 +25,7 @@ from hospital.models.register import Register
 
 class CClasses:
 
+    @token_required
     def set_class(self):
         """
         创建/编辑/删除课程
@@ -82,34 +84,32 @@ class CClasses:
         """
         args = parameter_required(('clid'))
         classes = Classes.query.filter(Classes.isdelete == 0, Classes.CLid == args.get('clid')).first_("未查到课程信息")
-        if args.get('token'):
-            user = token_to_user_(args.get('token'))
-            if is_user():
-                doctor_list2 = []
-                doctor_list = Course.query.with_entities(Course.DOid).distinct().all_with_page()
-                for doctor in doctor_list:
-                    doid = doctor.DOid
-                    doctor_dict = Doctor.query.filter(Doctor.DOid == doid, Doctor.isdelete == 0).first_("未找到医生信息")
-                    doctor = doctor_dict
-                    doctor_media = DoctorMedia.query.filter(DoctorMedia.isdelete == 0, DoctorMedia.DMtype == 0,
-                                                            DoctorMedia.DOid == doid).first()
-                    doctor.fill("doctormainpic", doctor_media["DMmedia"]) # 医生主图
-                    department = Departments.query.filter(Departments.isdelete == 0,
-                                                          Departments.DEid == doctor["DEid"])\
-                        .first_("未找到科室信息")
-                    doctor.fill("dename", department["DEname"]) # 科室名称
-                    review_good = Review.query.filter(Review.isdelete == 0, Review.RVnum >= 4, Review.DOid == doid).all()
-                    review = Review.query.filter(Review.isdelete == 0, Review.DOid == doid).all()
-                    if len(review) == 0:
-                        # 无评论情况下默认100%好评率
-                        review_percentage = 1
-                    else:
-                        review_percentage = Decimal(str(int(len(review_good) / len(review) or 0)))
-                    doctor.fill("favorablerate", "{0}%".format(review_percentage * 100)) # 好评率
-                    register = Register.query.filter(Register.DOid == doid, Register.isdelete == 0).all()
-                    doctor.fill("treatnum", len(register)) # 接诊次数
-                    doctor_list2.append(doctor)
-                classes.fill("doctor_list", doctor_list2)
+        if is_user():
+            doctor_list2 = []
+            doctor_list = Course.query.with_entities(Course.DOid).distinct().all_with_page()
+            for doctor in doctor_list:
+                doid = doctor.DOid
+                doctor_dict = Doctor.query.filter(Doctor.DOid == doid, Doctor.isdelete == 0).first_("未找到医生信息")
+                doctor = doctor_dict
+                doctor_media = DoctorMedia.query.filter(DoctorMedia.isdelete == 0, DoctorMedia.DMtype == 0,
+                                                        DoctorMedia.DOid == doid).first()
+                doctor.fill("doctormainpic", doctor_media["DMmedia"]) # 医生主图
+                department = Departments.query.filter(Departments.isdelete == 0,
+                                                      Departments.DEid == doctor["DEid"])\
+                    .first_("未找到科室信息")
+                doctor.fill("dename", department["DEname"]) # 科室名称
+                review_good = Review.query.filter(Review.isdelete == 0, Review.RVnum >= 4, Review.DOid == doid).all()
+                review = Review.query.filter(Review.isdelete == 0, Review.DOid == doid).all()
+                if len(review) == 0:
+                    # 无评论情况下默认100%好评率
+                    review_percentage = 1
+                else:
+                    review_percentage = Decimal(str(int(len(review_good) / len(review) or 0)))
+                doctor.fill("favorablerate", "{0}%".format(review_percentage * 100)) # 好评率
+                register = Register.query.filter(Register.DOid == doid, Register.isdelete == 0).all()
+                doctor.fill("treatnum", len(register)) # 接诊次数
+                doctor_list2.append(doctor)
+            classes.fill("doctor_list", doctor_list2)
         return Success(message="获取课程信息成功", data=classes)
 
     def set_course(self):
@@ -121,8 +121,7 @@ class CClasses:
         data = parameter_required(('clid', 'costarttime', 'coendtime', 'conum'))
         coid = data.get('coid')
         classes = Classes.query.filter(Classes.CLid == data.get('clid')).first_("未找到课程信息，请联系管理员")
-        token = token_to_user_(request.args.get("token"))
-        doctor = Doctor.query.filter(Doctor.DOid == token.id, Doctor.isdelete == 0).first()
+        doctor = Doctor.query.filter(Doctor.DOid == request.user.id, Doctor.isdelete == 0).first()
         # 时间控制
         start_time = datetime.datetime.strptime(data.get('costarttime'), "%Y-%m-%d %H:%M:%S")
         end_time = datetime.datetime.strptime(data.get('coendtime'), "%Y-%m-%d %H:%M:%S")
@@ -335,6 +334,7 @@ class CClasses:
         data["course_list"] = course_list
         return Success(message="获取具体安排成功", data=data)
 
+    @token_required
     def subscribe_classes(self):
         """
         预约具体课程
@@ -385,6 +385,7 @@ class CClasses:
 
         return Success("预约成功")
 
+    @token_required
     def set_setmeal(self):
         """
         新增/修改/删除课时套餐
@@ -425,6 +426,7 @@ class CClasses:
             db.session.add(sm_instance)
         return Success(message=msg, data={'smid': sm_instance.SMid})
 
+    @token_required
     def get_setmeal(self):
         """
         获取课时套餐
@@ -448,21 +450,19 @@ class CClasses:
             for setmeal_one in setmeal:
                 setmeal_list.append(setmeal_one)
             return Success(message="获取课时套餐成功", data=setmeal_list)
-        else:
-            return AuthorityError('无权限')
 
+    @token_required
     def get_subscribe_list(self):
         """
         分页获取预约列表
         """
         filter_args = [Subscribe.isdelete == 0]
-        args = parameter_required(('token', ))
-        token = args.get('token')
-        user = token_to_user_(token)
+        args = request.args.to_dict()
+        user_id = getattr(request, 'user').id
         if is_user():
-            filter_args.append(Subscribe.USid == user.id)
+            filter_args.append(Subscribe.USid == user_id)
         elif is_doctor():
-            filter_args.append(Subscribe.DOid == user.id)
+            filter_args.append(Subscribe.DOid == user_id)
         else:
             pass
         if args.get('sustatus'):
@@ -508,14 +508,11 @@ class CClasses:
 
         return Success(message="获取预约列表成功", data=subcribe_list)
 
+    @doctor_required
     def update_sustatus(self):
         """
         批量确认已上课
         """
-        token = request.args.get('token')
-        user = token_to_user_(token)
-        if not is_doctor():
-            return AuthorityError("无权限")
 
         with db.auto_commit():
             for subcribe in request.json:
@@ -524,7 +521,7 @@ class CClasses:
                     "SUstatus": 202
                 }
                 su_instance = Subscribe.query.filter(Subscribe.SUid == subcribe_id).first_('未找到该课程预约信息')
-                if su_instance["DOid"] != user.id:
+                if su_instance["DOid"] != getattr(request, 'user').id:
                     return AuthorityError("无权限")
                 su_instance.update(su_dict, null='not')
                 db.session.add(su_instance)
