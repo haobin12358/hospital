@@ -5,7 +5,7 @@ import uuid
 from hospital.config.enums import PointTaskType
 from hospital.extensions.interface.user_interface import doctor_required, token_required
 from hospital.extensions.success_response import Success
-from hospital.extensions.error_response import ParamsError
+from hospital.extensions.error_response import ParamsError, AuthorityError
 from hospital.extensions.params_validates import parameter_required
 from hospital.extensions.register_ext import db
 from hospital.models import Series, Video, Review, Doctor
@@ -71,12 +71,19 @@ class CVideo(object):
             db.session.add(doctor)
         return Success('创建剧集成功', data=doid)
 
-    @doctor_required
+    @token_required
     def list_series(self):
         data = parameter_required()
-        doid = getattr(request, 'user').id
+        filter_args = [Series.isdelete == 0]
+        if getattr(request, 'user').model == "Admin":
+            pass
+        elif getattr(request, 'user').model == "Doctor":
+            doid = getattr(request, 'user').id
+            filter_args.append(Series.DOid == doid)
+        else:
+            return AuthorityError()
         sename = data.get('sename')
-        filter_args = [Series.isdelete == 0, Series.DOid == doid]
+
         if sename:
             filter_args.append(Series.SEname.ilike('%{}%'.format(sename)))
         series_list = Series.query.filter(*filter_args).order_by(

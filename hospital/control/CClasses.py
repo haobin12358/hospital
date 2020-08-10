@@ -346,7 +346,7 @@ class CClasses:
         # 判断是否可报名
         if course["COstatus"] != 101:
             return CourseStatusError()
-        user_id = token_to_user_(args.get("token")).id
+        user_id = getattr(request, 'user').id
         user = User.query.filter(User.USid == user_id).first_("未找到用户信息")
         print(user)
         # 查看用户是否有对应的课时余额
