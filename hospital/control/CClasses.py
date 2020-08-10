@@ -235,8 +235,8 @@ class CClasses:
         """
         基于医生id获取未来30天课程情况
         """
-        args = parameter_required(('doid', ))
-        filter_args = [Course.isdelete == 0, Course.DOid == args.get('doid')]
+        args = parameter_required(('doid', 'clid'))
+        filter_args = [Course.isdelete == 0, Course.DOid == args.get('doid'), Course.CLid == args.get('clid')]
         year = int(datetime.datetime.now().year)
         month = int(datetime.datetime.now().month)
         day = int(datetime.datetime.now().day)
@@ -256,14 +256,14 @@ class CClasses:
         """
         基于医生id+日期获取课程安排情况（上午/下午），需要返回是否满员情况
         """
-        args = parameter_required(('doid', 'date'))
+        args = parameter_required(('doid', 'date', 'clid'))
         date = datetime.datetime.strptime(args.get("date"), "%Y-%m-%d")
         year = int(date.year)
         month = int(date.month)
         day = int(date.day)
         start_time = datetime.datetime(year, month, day, 0, 0, 0)
         end_time = datetime.datetime(year, month, day, 23, 59, 59) + datetime.timedelta(days=7)
-        filter_args = [Course.isdelete == 0, Course.DOid == args.get('doid')]
+        filter_args = [Course.isdelete == 0, Course.DOid == args.get('doid'), Course.CLid == args.get('clid')]
         filter_args.append(Course.COstarttime > start_time)
         filter_args.append(Course.COendtime < end_time)
         course_list = Course.query.filter(*filter_args).order_by(Course.COstarttime).all()
@@ -304,7 +304,7 @@ class CClasses:
         """
         基于医生id+日期+上下午标识符获取课程安排情况
         """
-        args = parameter_required(("doid", "date", "ampm"))
+        args = parameter_required(("doid", "date", "ampm", 'clid'))
         date = datetime.datetime.strptime(args.get("date"), "%Y-%m-%d")
         year = int(date.year)
         month = int(date.month)
@@ -315,17 +315,25 @@ class CClasses:
         else:
             start_time = datetime.datetime(year, month, day, 12, 0, 0)
             end_time = datetime.datetime(year, month, day, 23, 59, 59)
-        filter_args = [Course.isdelete == 0, Course.DOid == args.get('doid')]
-        print(1)
+        filter_args = [Course.isdelete == 0, Course.DOid == args.get('doid'), Course.CLid == args.get('clid')]
+
         filter_args.append(Course.COstarttime > start_time)
         filter_args.append(Course.COendtime < end_time)
         course_list = Course.query.filter(*filter_args).order_by(Course.COstarttime).all()
+        data = {}
         for course in course_list:
+            data["date"] = args.get("date")
+            data["clname"] = course.CLname
+            data["doname"] = course.DOname
             coid = course["COid"]
+            time_zones = "{0}:{1}-{2}:{3}".format(course.COstarttime.strftime("%H"), course.COstarttime.strftime("%M"),
+                                                  course.COendtime.strftime("%H"), course.COendtime.strftime("%M"))
+            course.fill("time_zones", time_zones)
             subscribe = Subscribe.query.filter(Subscribe.isdelete == 0, Subscribe.COid == coid).all()
             course.fill("subnum", len(subscribe))
             course.fill("date", args.get("date"))
-        return Success(message="获取具体安排成功", data=course_list)
+        data["course_list"] = course_list
+        return Success(message="获取具体安排成功", data=data)
 
     def subscribe_classes(self):
         """
