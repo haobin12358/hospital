@@ -30,7 +30,7 @@ class CDoctor(object):
         self._fill_department(doctor)
         self._fill_doctor_mainpic(doctor)
         self._fill_doctor_listpic(doctor)
-        # self._fill_doctor_qrpic(doctor)
+        self._fill_doctor_qrpic(doctor)
         if conid:
             # 填充会诊信息
             self._fill_consultation(doctor, conid)

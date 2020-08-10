@@ -117,7 +117,7 @@ class CClasses:
         课程排班
         """
         if not is_doctor():
-            return AuthorityError('无权限')
+            return AuthorityError('排班需医生账号操作')
         data = parameter_required(('clid', 'costarttime', 'coendtime', 'conum'))
         coid = data.get('coid')
         classes = Classes.query.filter(Classes.CLid == data.get('clid')).first_("未找到课程信息，请联系管理员")
