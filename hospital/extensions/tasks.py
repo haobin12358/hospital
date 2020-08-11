@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from flask import current_app
-from sqlalchemy import false, or_
+from sqlalchemy import false, or_, and_
 from datetime import timedelta, datetime
 from hospital.config.enums import ActivityStatus, UserActivityStatus, OrderMainStatus, CourseStatus, CouponStatus, \
     CouponUserStatus, ProductType, ProductStatus, RegisterStatus
@@ -160,7 +160,7 @@ def auto_cancle_register():
             updatenum = Register.query.filter(
                 Register.isdelete == 0,
                 Register.REstatus < RegisterStatus.commenting.value,
-                or_((Register.REdate == now.date(), Register.REtansferDate == None),
+                or_(and_(Register.REdate == now.date(), Register.REtansferDate == None),
                     Register.REtansferDate == now.date()),
             ).update({'REstatus': RegisterStatus.cancle.value}, synchronize_session=False)
             current_app.logger.info('修改预约{}条'.format(updatenum))
@@ -173,4 +173,4 @@ if __name__ == '__main__':
 
     app = create_app()
     with app.app_context():
-        change_activity_status()
+        auto_cancle_register()
