@@ -24,7 +24,6 @@ class CExample(object):
             raise NotFound('案例已删除')
 
         self._fill_example(exm, 'details')
-        [setattr(exm, i, '') for i in exm.keys() if getattr(exm, i) is None]
         return Success('获取成功', data=exm)
 
     def list(self):

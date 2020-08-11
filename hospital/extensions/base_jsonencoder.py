@@ -12,7 +12,7 @@ class JSONEncoder(_JSONEncoder):
 
         if hasattr(o, 'keys') and hasattr(o, '__getitem__'):
             res = dict(o)
-            new_res = {k.lower(): v for k, v in res.items()}
+            new_res = {k.lower(): v if v is not None else '' for k, v in res.items()}
             return new_res
         if isinstance(o, datetime):
             # 也可以序列化时间类型的对象
