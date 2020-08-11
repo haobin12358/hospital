@@ -3,7 +3,7 @@ from datetime import date, datetime
 
 from flask import current_app, request
 import uuid
-
+import random
 from sqlalchemy import or_, and_
 
 from hospital.config.enums import RegisterStatus, RegisterAmOrPm, DoctorMetiaType
@@ -135,6 +135,7 @@ class CRegister(object):
     def list_calling(self):
         usid = getattr(request, 'user').id
         # todo 对接his
+        """
         data = {"callinglist": [
             {
                 "departmentname": "未知",  # 科室名
@@ -151,6 +152,14 @@ class CRegister(object):
                 continue
             dep.fill('currentnum', calling.get('currentnum'))
             callinglist.append(dep)
+        """
+        # todo call list fake data
+        denames = db.session.query(Departments.DEname).filter(Departments.isdelete == 0
+                                                              ).order_by(Departments.DEsort.asc(),
+                                                                         Departments.createtime.desc(),
+                                                                         origin=True).all()
+        callinglist = [{'dename': item[0], 'currentnum': '未知', 'update': f'{random.randint(1, 19)}秒钟前'}
+                       for item in denames if item]
         today = date.today()
         registerlist = Register.query.filter(Register.USid == usid, Register.isdelete == 0,
                                              Register.REdate == today).all()
