@@ -76,7 +76,7 @@ class CUser(object):
                 'usname': user.USname,
                 'usavatar': user['USavatar'],
                 'uslevel': user.USlevel,
-                'usbalance': 0,  # todo 对接会员卡账户
+                'usbalance': user.USbalance,  # todo 对接会员卡账户
                 }
         current_app.logger.info('return_data : {}'.format(data))
         return Success('登录成功', data=data)
@@ -354,6 +354,9 @@ class CUser(object):
     @staticmethod
     def _fill_user(user):
         user.fill('usgender_zh', Gender(user.USgender).zh_value)
+        user.fill('uhnum', db.session.query(func.sum(UserHour.UHnum)
+                                            ).filter(UserHour.isdelete == false(),
+                                                     UserHour.USid == user.USid).scalar() or 0)
         familys = Family.query.filter(Family.isdelete == false(),
                                       Family.USid == user.USid).order_by(Family.FAtype.asc()).all()
         for family in familys:
@@ -373,7 +376,7 @@ class CUser(object):
         user_list = us_query.order_by(User.createtime.desc()).all_with_page()
         for user in user_list:
             user.fill('usgender_zh', Gender(user.USgender).zh_value)
-            user.fill('usbalance', 0)  # todo 对接会员卡
+            # user.fill('usbalance', 0)  # todo 对接会员卡
             user.fill('uhnum', db.session.query(func.sum(UserHour.UHnum)
                                                 ).filter(UserHour.isdelete == false(),
                                                          UserHour.USid == user.USid).scalar() or 0)
