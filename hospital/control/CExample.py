@@ -24,6 +24,7 @@ class CExample(object):
             raise NotFound('案例已删除')
 
         self._fill_example(exm, 'details')
+        [setattr(exm, i, '') for i in exm.keys() if getattr(exm, i) is None]
         return Success('获取成功', data=exm)
 
     def list(self):
@@ -85,8 +86,8 @@ class CExample(object):
                     return Success('更新成功', data=exid)
             # 添加
             data = parameter_required(
-                {'exname': '患者姓名', 'exgender': '性别', 'exage': '年龄', 'syid': '症状',
-                 'exheight': '身高', 'exweight': '体重', 'exalpha': '主图'})
+                {'exname': '患者姓名', 'exgender': '性别', 'syid': '症状',
+                 'exalpha': '主图'})
             exid = str(uuid.uuid1())
 
             if data.get('exsort', 0):

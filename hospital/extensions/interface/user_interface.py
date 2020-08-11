@@ -48,7 +48,7 @@ def is_doctor():
 def doctor_required(func):
     def inner(self, *args, **kwargs):
         if not is_doctor():
-            raise AuthorityError()
+            raise AuthorityError('需医生权限操作')
         return func(self, *args, **kwargs)
 
     return inner
