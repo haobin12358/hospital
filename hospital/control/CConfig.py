@@ -5,6 +5,8 @@ last update time:2020/3/13 03:53
 """
 import uuid, datetime
 from flask import request, current_app
+
+from hospital.config.http_config import MEDIA_HOST
 from hospital.extensions.interface.user_interface import admin_required, is_admin, is_hign_level_admin, token_required, \
     is_doctor, is_user
 from hospital.extensions.register_ext import db
@@ -55,6 +57,7 @@ class CConfig:
     def get_csd(self):
         "获取客服customer service department二维码"
         csd = Setting.query.filter(Setting.isdelete == 0, Setting.STname == "CSD").first()
+        csd.STvalue = MEDIA_HOST + csd.STvalue if csd and not str(csd.STvalue).startswith('http') else csd.STvalue
         return Success(data=csd)
 
     @admin_required
@@ -88,6 +91,8 @@ class CConfig:
         # 主图
         if "min_pic" not in about_us_dict:
             about_us_dict["min_pic"] = ""
+        elif not about_us_dict["min_pic"].startswith('http'):
+            about_us_dict["min_pic"] = MEDIA_HOST + about_us_dict["min_pic"]
         # 医院名称
         if "name" not in about_us_dict:
             about_us_dict["name"] = ""
