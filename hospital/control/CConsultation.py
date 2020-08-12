@@ -164,6 +164,8 @@ class CConsultation(CDoctor):
         data = parameter_required('conid')
         usid = getattr(request, 'user').id
         user = User.query.filter(User.USid == usid, User.isdelete == 0).first_('用户不存在')
+        if not user.UStelphone:
+            raise StatusError("请先在 '我的 - 我的家人' 中完善本人信息")
         conid = data.get('conid')
         con = Consultation.query.filter(Consultation.CONid == conid, Consultation.isdelete == 0).first_('会诊已结束')
         con_count = db.session.query(func.count(Enroll.ENid)).filter(

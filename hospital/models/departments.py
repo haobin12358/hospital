@@ -86,7 +86,7 @@ class Example(Base):
     EXtreatmentOutcome = Column(Text, comment='治疗结果')
     EXperoration = Column(Text, comment='结束语')
     EXbriefIntroduction = Column(Text, comment='简介')
-    EXalpha = Column(Text, comment='主图')
+    EXalpha = Column(Text, url=True, comment='主图')
     EXsort = Column(Integer, default=0, comment='排序')
 
     @orm.reconstructor

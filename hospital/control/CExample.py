@@ -33,7 +33,7 @@ class CExample(object):
         examples_sql = Example.query.join(Symptom, Symptom.SYid == Example.SYid).filter(
             Example.isdelete == 0, Symptom.isdelete == 0)
         if syid:
-            examples_sql.filter(Example.SYid == syid)
+            examples_sql = examples_sql.filter(Example.SYid == syid)
         else:
             if not is_admin():
                 raise AuthorityError()
