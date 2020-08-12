@@ -158,7 +158,8 @@ class CRegister(object):
                                                               ).order_by(Departments.DEsort.asc(),
                                                                          Departments.createtime.desc(),
                                                                          origin=True).all()
-        callinglist = [{'dename': item[0], 'currentnum': '未知', 'update': f'{random.randint(1, 19)}秒钟前'}
+        update_time = datetime.now().second % 60 or 1  # 每隔60秒更新一次
+        callinglist = [{'dename': item[0], 'currentnum': '未知', 'update': f'{update_time}秒钟前'}
                        for item in denames if item]
         today = date.today()
         registerlist = Register.query.filter(Register.USid == usid, Register.isdelete == 0,

@@ -19,7 +19,8 @@ from hospital.config.secret import MiniProgramAppId, MiniProgramAppSecret
 from hospital.extensions.error_response import WXLoginError, ParamsError, NotFound, DumpliError, StatusError, \
     AuthorityError
 from hospital.extensions.interface.user_interface import token_required, is_user, is_admin, admin_required
-from hospital.extensions.params_validates import parameter_required, validate_chinese, validate_arg, validate_price
+from hospital.extensions.params_validates import parameter_required, validate_chinese, validate_arg, validate_price, \
+    validate_telephone
 from hospital.extensions.register_ext import db, wx_pay
 from hospital.extensions.request_handler import base_encode
 from hospital.extensions.success_response import Success
@@ -237,8 +238,7 @@ class CUser(object):
             if not uaid:  # 添加
                 parameter_required({'uaname': "姓名", 'uatel': "手机号码",
                                     'uatext': "具体地址", 'aaid': "地址"}, datafrom=data)
-                if not re.match(r'^1[1-9][0-9]{9}$', address_dict['UAtel']):
-                    raise ParamsError('请填写正确的手机号码')
+                validate_telephone(address_dict['UAtel'])
                 address_dict['UAid'] = str(uuid.uuid1())
                 address_dict['UAdefault'] = True if not default_address else False
                 user_address = UserAddress.create(address_dict)
@@ -256,8 +256,7 @@ class CUser(object):
                         UserAddress.query.filter(UserAddress.isdelete == false(), UserAddress.USid == usid,
                                                  UserAddress.UAid != user_address.UAid).update({'UAdefault': False})
                     if uatel and '*' not in uatel:
-                        if not re.match(r'^1[1-9][0-9]{9}$', address_dict['UAtel']):
-                            raise ParamsError('请填写正确的手机号码')
+                        validate_telephone(address_dict['UAtel'])
                     else:
                         del address_dict['UAtel']
                     address_dict['UAdefault'] = True if not uadefault and (not default_address or
@@ -437,8 +436,8 @@ class CUser(object):
         parameter_required(required_dict, datafrom=data)
         if not validate_chinese(str(faname)):
             raise ParamsError('姓名中包含非汉语字符, 请检查姓名是否填写错误')
-        if fatel and not re.match(r'^1[1-9][0-9]{9}$', str(fatel)):
-            raise ParamsError('请填写正确的手机号码')
+        if fatel:
+            validate_telephone(fatel)
         if not re.match(r'^[1-3]$', str(farole)):
             raise ParamsError('参数错误：farole')
         id_valid = validator.get_info(faidentification)
@@ -521,10 +520,9 @@ class CUser(object):
     @token_required
     def send_identifying_code(self):
         """发送验证码"""
-        args = parameter_required('telphone')
+        args = parameter_required({'telphone': '手机号码'})
         tel = args.get('telphone')
-        if not tel or not re.match(r'^1[1-9][0-9]{9}$', str(tel)):
-            raise ParamsError('请输入正确的手机号码')
+        validate_telephone(tel)
         # 拼接验证码字符串（6位）
         code = ""
         while len(code) < 6:

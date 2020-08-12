@@ -69,6 +69,13 @@ def validate_price(price, can_zero=True):
     return Decimal(price).quantize(Decimal('0.00'))
 
 
+def validate_telephone(telephone):
+    """校验手机号"""
+    if not re.match(r'^1[1-9][0-9]{9}$', str(telephone)):
+        raise ParamsError(f' "{telephone}" 号码格式错误，请填写正确的手机号码')
+    return telephone
+
+
 def validate_chinese(name):
     """
     校验是否是纯汉字

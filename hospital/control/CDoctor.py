@@ -8,7 +8,7 @@ from werkzeug.security import generate_password_hash
 from hospital.extensions.interface.user_interface import admin_required
 from hospital.extensions.success_response import Success
 from hospital.extensions.error_response import ParamsError, NotFound
-from hospital.extensions.params_validates import parameter_required
+from hospital.extensions.params_validates import parameter_required, validate_telephone
 from hospital.extensions.register_ext import db
 from hospital.models import Departments, Doctor, DoctorMedia, Consultation, Enroll
 from hospital.config.enums import DoctorMetiaType, ConsultationStatus
@@ -84,6 +84,9 @@ class CDoctor(object):
         data = parameter_required()
         doid = data.get('doid')
         # password = data.get('dopassword')
+        dotel = data.get('dotel')
+        if dotel:
+            validate_telephone(dotel)
         with db.auto_commit():
             if doid:
                 doctor = Doctor.query.filter(
@@ -100,6 +103,8 @@ class CDoctor(object):
 
                 # 执行update
                 if doctor:
+                    if Doctor.query.filter(Doctor.DOid != doid, Doctor.DOtel == dotel, Doctor.isdelete == 0).first():
+                        raise ParamsError(f'已存在使用手机号"{dotel}"的其他医生账户, 请检查后重试')
                     update_dict = doctor.get_update_dict(data)
                     if update_dict.get('DOid'):
                         update_dict.pop('DOid')
@@ -131,6 +136,8 @@ class CDoctor(object):
                 'doctormainpic': '医生主图', 'dodetails': '医生简介', 'dowxid': '医生微信ID',
                 'doskilledin': '擅长方向'})
 
+            if Doctor.query.filter(Doctor.DOtel == dotel, Doctor.isdelete == 0).first():
+                raise ParamsError(f'已存在使用手机号"{dotel}"的医生账户, 请检查后重试')
             doid = str(uuid.uuid1())
 
             if data.get('dosort', 0):
@@ -142,7 +149,7 @@ class CDoctor(object):
             doctor = Doctor.create({
                 'DOid': doid,
                 'DOname': data.get('doname'),
-                'DOtel': data.get('dotel'),
+                'DOtel': dotel,
                 'DOtitle': data.get('dotitle'),
                 'DOdetails': data.get('dodetails'),
                 'DOwxid': data.get('dowxid'),
