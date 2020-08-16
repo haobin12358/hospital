@@ -11,7 +11,7 @@ import uuid
 from sqlalchemy import or_
 
 from hospital.extensions.base_jsonencoder import JSONEncoder
-from hospital.extensions.interface.user_interface import admin_required, token_required, is_user
+from hospital.extensions.interface.user_interface import admin_required, token_required, is_user, is_admin
 from hospital.extensions.success_response import Success
 from hospital.extensions.error_response import ParamsError, StatusError
 from hospital.extensions.params_validates import parameter_required
@@ -52,7 +52,8 @@ class COrder(object):
             filter_args.append(or_(
                 OrderMain.CLname.ilike('%{}%'.format(omname)),
                 OrderMain.PRtitle.ilike('%{}%'.format(omname))))
-
+        if is_admin():
+            filter_args.append(OrderMain.OMtype == 0)
         omlist = OrderMain.query.filter(*filter_args).order_by(OrderMain.createtime.desc()).all_with_page()
         if is_user():
             uh_list = UserHour.query.filter(UserHour.USid == usid, UserHour.isdelete == 0).all()
