@@ -211,9 +211,10 @@ class CEvaluation:
                 db.session.add(ai_instance)
             evaluation = Evaluation.query.filter(Evaluation.isdelete == 0, Evaluation.EVid == evid).first_("未找到该评测")
             # 总积分逻辑改为平均分
-            point = Decimal(str(point / len(evaluationitem_all)))
-            evaluationpoint = EvaluationPoint.query.filter(EvaluationPoint.EPstart < point,
-                                                           EvaluationPoint.EPend > point, EvaluationPoint.isdelete == 0)\
+            # point = Decimal(str(point / len(evaluationitem_all)))
+            current_app.logger.info(point)
+            evaluationpoint = EvaluationPoint.query.filter(EvaluationPoint.EPstart <= point,
+                                                           EvaluationPoint.EPend >= point, EvaluationPoint.isdelete == 0)\
                 .first_("未找到评测结论")
             answer = evaluationpoint["EPanswer"]
             an_dict = {
