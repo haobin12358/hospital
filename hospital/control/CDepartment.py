@@ -132,6 +132,7 @@ class CDepartment(object):
                     # 更新症状
                     if data.get('symptoms'):
                         self._add_or_update_symptom(dep, data.get('symptoms'))
+                    update_dict['DEalpha'] = data.get('dalpha')
                     dep.update(update_dict)
                     current_app.logger.info('更新科室 {}'.format(deid))
                     db.session.add(dep)
