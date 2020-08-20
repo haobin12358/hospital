@@ -339,7 +339,7 @@ class CConfig:
             user = User.query.filter(User.USid == user_item.USid).first()
             user_item.fill('usname', user.USname)
             user_item.fill('utname', PointTaskType(user_item.UIaction).zh_value)
-            user_item.fill('createtime', user.createtime)
+            user_item.fill('createtime', user_item.createtime)
         return Success(message="获取积分变动成功", data=userIntegral)
 
     def _judge_point(self, pttype, uitype, usid, uiintegral=None):
