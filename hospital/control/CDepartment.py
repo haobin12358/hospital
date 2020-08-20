@@ -95,7 +95,7 @@ class CDepartment(object):
         deid = data.get('deid')
         # index = data.get('index')
         dep = Departments.query.filter(
-            Departments.DEid == deid, Departments.isdelete == 0).first()
+            Departments.DEid == deid, Departments.isdelete == 0).first_('未找到科室信息')
         # current_app.logger.info('get index {}'.format(index))
         self._fill_dep_details(dep)
 

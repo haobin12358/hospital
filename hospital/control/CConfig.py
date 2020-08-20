@@ -304,7 +304,7 @@ class CConfig:
         # 后台更新次数以及积分数，负表示仅限次数，0表示无限次，正表示每日可完成次数
         if not (is_admin() or is_hign_level_admin()):
             return AuthorityError()
-        data = parameter_required('ptid', 'ptnumber', 'pttime', 'pticon')
+        data = parameter_required(('ptid', 'ptnumber', 'pttime', 'pticon'))
         if not data.get('ptnumber'):
             data['ptnumber'] = 0
         if not data.get('pttime'):
