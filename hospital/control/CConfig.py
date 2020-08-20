@@ -283,7 +283,7 @@ class CConfig:
                                                                                        time_now.day, 23, 59, 59)
                                                                      ).all()
                         if pttime <= len(userintegral_end):
-                            pointtask["is_get"] = 2
+                            pointtask.is_get = 2
                     elif pttime < 0:
                         pttime = abs(pttime)
                         userintegral_end = UserIntegral.query.filter(UserIntegral.isdelete == 0,
@@ -293,7 +293,7 @@ class CConfig:
                                                                      UserIntegral.UIaction == pointtask.PTtype
                                                                      ).all()
                         if pttime <= len(userintegral_end):
-                            pointtask["is_get"] = 2
+                            pointtask.is_get = 2
                     else:
                         pass
 
