@@ -42,7 +42,7 @@ class Honour(Base):
     """医院荣誉"""
     __tablename__ = "Honour"
     HOid = Column(String(64), primary_key=True)
-    HOpicture = Column(Text, nullable=False, comment="图片")
+    HOpicture = Column(Text, nullable=False, url=True, comment="图片")
     HOtext = Column(Text, nullable=False, comment="文字")
 
 
