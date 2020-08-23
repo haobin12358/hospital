@@ -6,7 +6,7 @@ import uuid
 import random
 from sqlalchemy import or_, and_
 
-from hospital.config.enums import RegisterStatus, RegisterAmOrPm, DoctorMetiaType
+from hospital.config.enums import RegisterStatus, RegisterAmOrPm, DoctorMetiaType, PointTaskType
 from hospital.config.timeformat import format_forweb_no_HMS
 from hospital.extensions.interface.user_interface import token_required, is_user, is_doctor, admin_required
 from hospital.extensions.success_response import Success
@@ -106,6 +106,9 @@ class CRegister(object):
             current_app.logger.info('创建挂号 科室 {} 就诊人 {}'.format(dep.DEname, family.FAname))
 
             db.session.add(register)
+        # 预约挂号 积分任务
+        from .CConfig import CConfig
+        CConfig()._judge_point(PointTaskType.register.value, 1, usid)
         return Success('预约成功{}，排队中'.format(dep.DEname))
 
     def _fill_resgister(self, register):

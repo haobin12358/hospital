@@ -66,6 +66,11 @@ class CAssistance(object):
                                                             'APimg': img_url})) for img_url in poverty]
 
             db.session.add_all(instance_list)
+
+        # 申请公益援助 积分任务
+        from .CConfig import CConfig
+        from ..config.enums import PointTaskType
+        CConfig()._judge_point(PointTaskType.help_someone.value, 1, getattr(request, 'user').id)
         return Success('提交成功', data={'ATid': assistance_dict['ATid']})
 
     @token_required

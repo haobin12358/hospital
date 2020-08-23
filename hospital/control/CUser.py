@@ -14,7 +14,7 @@ from flask import current_app, request
 from id_validator import validator
 from hospital.common.default_head import GithubAvatarGenerator
 from hospital.common.identifying_code import SendSMS
-from hospital.config.enums import FamilyRole, FamilyType, Gender, OrderPayType, WalletRecordType
+from hospital.config.enums import FamilyRole, FamilyType, Gender, OrderPayType, WalletRecordType, PointTaskType
 from hospital.config.secret import MiniProgramAppId, MiniProgramAppSecret
 from hospital.extensions.error_response import WXLoginError, ParamsError, NotFound, DumpliError, StatusError, \
     AuthorityError
@@ -22,10 +22,11 @@ from hospital.extensions.interface.user_interface import token_required, is_user
 from hospital.extensions.params_validates import parameter_required, validate_chinese, validate_arg, validate_price, \
     validate_telephone
 from hospital.extensions.register_ext import db, wx_pay
-from hospital.extensions.request_handler import base_encode
+from hospital.extensions.request_handler import base_encode, base_decode
 from hospital.extensions.success_response import Success
 from hospital.extensions.token_handler import usid_to_token
 from hospital.extensions.weixin import WeixinLogin
+from .CConfig import CConfig
 from hospital.models import User, AddressProvince, AddressCity, AddressArea, UserAddress, Family, IdentifyingCode, \
     UserHour, OrderPay, WalletRecord
 
@@ -51,7 +52,7 @@ class CUser(object):
         user = User.query.filter(User.isdelete == false(), User.USopenid == openid).first()
         head = self._get_local_head(userinfo.get("avatarUrl"), openid)
         sex = userinfo.get('gender', 0) if userinfo.get('gender') else Gender.woman.value
-
+        invite_task, inviter_id = None, None
         with db.auto_commit():
             if user:
                 current_app.logger.info('get exist user by openid: {}'.format(user.__dict__))
@@ -70,6 +71,15 @@ class CUser(object):
                              'USunionid': unionid,
                              }
                 user = User.create(user_dict)
+
+                if data.get('secret_usid'):
+                    try:
+                        current_app.logger.info(f'>>> 邀请新人积分任务 start <<<')
+                        inviter_id = base_decode(data.get('secret_usid'))
+                        current_app.logger.info(f'secret_usid --> inviter_id: {inviter_id}')
+                        invite_task = True
+                    except Exception as e:
+                        current_app.logger.error(f'邀请新人积分任务解析出错： {e}')
             db.session.add(user)
 
         token = usid_to_token(user.USid, level=user.USlevel, username=user.USname)
@@ -79,6 +89,12 @@ class CUser(object):
                 'uslevel': user.USlevel,
                 'usbalance': user.USbalance,  # todo 对接会员卡账户
                 }
+
+        if invite_task:  # 邀请新人积分任务
+            CConfig()._judge_point(PointTaskType.invate_new.value, 1, inviter_id)
+        else:  # 登录任务积分
+            current_app.logger.info('我到了')
+            CConfig()._judge_point(PointTaskType.login.value, 1, user.USid)
         current_app.logger.info('return_data : {}'.format(data))
         return Success('登录成功', data=data)
 
@@ -486,6 +502,9 @@ class CUser(object):
                 current_app.logger.info('添加家人为本人，更新user资料')
                 user.update({'UStelphone': fatel, 'UScardid': faidentification, 'USgender': gender})
             db.session.add_all([family, user])
+
+        # 完善 个人/家人 信息积分任务
+        CConfig()._judge_point(PointTaskType.fill_me.value if faself else PointTaskType.fill_family.value, 1, user.USid)
 
         return Success(message=msg, data={'faid': family.FAid})
 

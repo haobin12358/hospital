@@ -196,4 +196,10 @@ class CActivity(object):
                                       'ACid': activity.ACid,
                                       'UAstatus': UserActivityStatus.ready.value})
             db.session.add(ua)
+
+        # 活动报名 积分任务
+        from .CConfig import CConfig
+        from ..config.enums import PointTaskType
+        CConfig()._judge_point(PointTaskType.make_activity.value, 1, user.USid)
+
         return Success('报名成功', data={'uaid': ua.UAid})

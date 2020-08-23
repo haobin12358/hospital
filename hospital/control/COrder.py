@@ -205,6 +205,7 @@ class COrder(object):
             return wx_pay.reply(u"签名验证失败", False)
         out_trade_no = data.get('out_trade_no')
         current_app.logger.info("This is wechat_notify, opayno is {}".format(out_trade_no))
+        point_task = 0
         with db.auto_commit():
             order_pay_instance = OrderPay.query.filter_by_({'OPayno': out_trade_no,
                                                             'OPayType': OrderPayType.wx.value}).first_()
@@ -230,6 +231,11 @@ class COrder(object):
                         wallet_recharge.isdelete = False
                         user.USbalance = user.USbalance + wallet_recharge.WRcash
                         current_app.logger.info('微信支付,充值余额成功')
+                        point_task = 1
+        if point_task:
+            # 余额充值 积分任务
+            from .CConfig import CConfig
+            CConfig()._judge_point(PointTaskType.vip_money.value, 1, user.USid)
 
         # 处理订单中其余数据变动
         [self._over_ordermain(omid) for omid in omids]
@@ -305,7 +311,7 @@ class COrder(object):
     def _pay_detail(self, opayno, mount_price, body, openid='openid'):
 
         body = re.sub("[\s+\.\!\/_,$%^*(+\"\'\-_]+|[+——！，。？、~@#￥%……&*（）]+", '', body)
-        mount_price = 0.01  # todo 上线后修改为实际支付
+        if not current_app.config.get('IMG_TO_OSS'): mount_price = 0.01  # todo 上线后修改为实际支付
         current_app.logger.info('openid is {}, out_trade_no is {} '.format(openid, opayno))
 
         try:
