@@ -93,7 +93,6 @@ class CUser(object):
         if invite_task:  # 邀请新人积分任务
             CConfig()._judge_point(PointTaskType.invate_new.value, 1, inviter_id)
         else:  # 登录任务积分
-            current_app.logger.info('我到了')
             CConfig()._judge_point(PointTaskType.login.value, 1, user.USid)
         current_app.logger.info('return_data : {}'.format(data))
         return Success('登录成功', data=data)

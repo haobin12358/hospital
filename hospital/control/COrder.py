@@ -374,7 +374,10 @@ class COrder(object):
             db.session.add(op_integral)
             db.session.add(user)
 
-        trueunit = product.PRvipPrice if user.USlevel and product.PRvipPrice else product.PRprice
+        # todo Tips: 20200824 00:34
+        # 因无法对接his，暂时无法提供购买vip的服务；前端商城界面逻辑展示的会员价/原价，现行修改方案将vip价改为现价，商品按现价支付
+        # trueunit = product.PRvipPrice if user.USlevel and product.PRvipPrice else product.PRprice
+        trueunit = product.PRvipPrice if product.PRvipPrice else product.PRprice
 
         truemount = (Decimal(trueunit) if trueunit else Decimal(0)) * decimal_omnum
         ucid = ''
