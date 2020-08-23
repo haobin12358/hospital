@@ -29,7 +29,7 @@ class CReview:
         args = parameter_required()
         if is_admin() or is_user():
             filter_args = [Review.isdelete == 0]
-            if args.get('rvtype') and args.get('rvtypeid'):
+            if args.get('rvtype') and args.get('rvtypeid') and args.get('rvtypeid') != 'undefined':
                 filter_args.append(Review.RVtypeid == args.get('rvtypeid'))
             if args.get('doid'):
                 filter_args.append(Review.DOid == args.get('doid'))
@@ -84,6 +84,10 @@ class CReview:
             return StatusError("评论种类异常")
         rvid = str(uuid.uuid1())
         user_dict = User.query.filter(User.USid == usid).first_("未找到该用户")
+        if (rvtype == 401 or rvtype == 402) and Review.query.filter(
+                Review.isdelete == 0, Review.USid == usid, Review.RVtype == rvtype,
+                Review.RVtypeid == data.get('rvtypeid')).first():
+            raise StatusError('您已进行过评价')
         rv_dict = {
             "USid": usid,
             "USname": user_dict["USname"],

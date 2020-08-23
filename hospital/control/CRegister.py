@@ -24,7 +24,6 @@ class CRegister(object):
     def list(self):
         data = parameter_required()
         restatus = int(data.get('restatus', 0))
-        current_app.logger.info('get restatus {} {}'.format(restatus, type(restatus)))
         filter_args = [Register.isdelete == 0, ]
         if is_user():
             usid = getattr(request, 'user').id
@@ -114,6 +113,8 @@ class CRegister(object):
             register.hide('USid')
         restatus = register.REstatus
         register.fill('restatus_zh', RegisterStatus(restatus).zh_value)
+        if is_user():
+            register.REcode = register.REcode or '等待排号中'
         reamorpm = register.REtansferAmOrPm
         if reamorpm is None:
             reamorpm = register.REamOrPm
