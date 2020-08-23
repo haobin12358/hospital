@@ -11,6 +11,7 @@ from hospital.extensions.success_response import Success
 from hospital.extensions.error_response import ParamsError, StatusError
 from hospital.extensions.params_validates import parameter_required
 from hospital.extensions.register_ext import db
+from hospital.extensions.tasks import add_async_task, change_consultation_status, cancel_async_task
 from hospital.models import Departments, Doctor, Consultation, User, Enroll
 from hospital.config.enums import ConsultationStatus
 
@@ -101,10 +102,12 @@ class CConsultation(CDoctor):
                     current_app.logger.info('删除会诊 {}'.format(conid))
                     con.isdelete = 1
                     db.session.add(con)
+                    cancel_async_task(conn_id='change_consultation{}'.format(conid))  # 取消已有定时任务
                     return Success('删除成功', data=conid)
 
                 # 执行update
                 if con:
+                    cancel_async_task(conn_id='change_consultation{}'.format(conid))  # 取消已有定时任务
                     #  只能修改这个4个字段
                     update_dict = {}
                     if constarttime:
@@ -118,6 +121,10 @@ class CConsultation(CDoctor):
                     con.update(update_dict)
                     current_app.logger.info('更新会诊信息 {}'.format(conid))
                     db.session.add(con)
+                    # 到开始时间更改状态, 除手动关闭外
+                    if constatus != ConsultationStatus.finish.value:
+                        add_async_task(func=change_consultation_status, start_time=constarttime,
+                                       func_args=(conid,), conn_id='change_consultation{}'.format(conid))
                     return Success('更新成功', data=conid)
             # 添加
             data = parameter_required({
@@ -146,6 +153,9 @@ class CConsultation(CDoctor):
 
             current_app.logger.info('创建会诊 {}'.format(doid))
             db.session.add(con)
+            # 到开始时间更改状态
+            add_async_task(func=change_consultation_status, start_time=constarttime,
+                           func_args=(conid,), conn_id='change_consultation{}'.format(conid))
         return Success('创建会诊成功', data=conid)
 
     def _check_time(self, check_time):

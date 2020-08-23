@@ -3,9 +3,10 @@ from flask import current_app
 from sqlalchemy import false, or_, and_
 from datetime import timedelta, datetime
 from hospital.config.enums import ActivityStatus, UserActivityStatus, OrderMainStatus, CourseStatus, CouponStatus, \
-    CouponUserStatus, ProductType, ProductStatus, RegisterStatus
+    CouponUserStatus, ProductType, ProductStatus, RegisterStatus, ConsultationStatus
 from hospital.extensions.register_ext import celery, db, conn
-from hospital.models import Activity, UserActivity, OrderMain, Course, Coupon, CouponUser, Products, Register
+from hospital.models import Activity, UserActivity, OrderMain, Course, Coupon, CouponUser, Products, Register, \
+    Consultation
 
 
 def add_async_task(func, start_time, func_args, conn_id=None, queue='high_priority'):
@@ -135,6 +136,27 @@ def change_coupon_status(coid):
         current_app.logger.error('Error: {}'.format(e))
     finally:
         current_app.logger.info(">>> 更改优惠券状态任务结束 coid:{} <<<".format(coid))
+
+
+@celery.task()
+def change_consultation_status(conid):
+    current_app.logger.info(">>> 更改会诊状态 conid:{} <<<".format(conid))
+    try:
+        consultation = Consultation.query.filter(Consultation.isdelete == false(), Consultation.CONid == conid).first()
+        if not consultation:
+            current_app.logger.error('conid: {} 不存在'.format(conid))
+            return
+        if consultation.CONstatus != ConsultationStatus.ready.value:
+            current_app.logger.error('状态不正确, CONstatus: {}'.format(consultation.CONstatus))
+            return
+        with db.auto_commit():
+            consultation.update({'CONstatus': ConsultationStatus.finish.value})
+            current_app.logger.info('CONstatus: 0 --> 2')
+        conn.delete('change_consultation{}'.format(conid))
+    except Exception as e:
+        current_app.logger.error('Error: {}'.format(e))
+    finally:
+        current_app.logger.info(">>> 更改会诊状态任务结束 coid:{} <<<".format(conid))
 
 
 @celery.task()

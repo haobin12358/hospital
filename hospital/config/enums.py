@@ -112,7 +112,7 @@ class CouponUserStatus(Enum):
 
 
 class ConsultationStatus(Enum):
-    ready = 0, '未开始'
+    ready = 0, '报名中'
     # ongoing = 1, '会诊中'
     finish = 2, '已结束'
     # abort = 10, '中止'
