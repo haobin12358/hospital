@@ -298,7 +298,7 @@ class CDoctor(object):
         current_app.logger.info('get review good = {} review = {}'.format(len(review_good), len(review)))
         if len(review) == 0:
             # 无评论情况下默认100%好评率
-            review_percentage = 1
+            review_percentage = Decimal('1')
         else:
             review_percentage = Decimal(str(len(review_good) / len(review) or 0))
         doctor.fill("favorablerate", "{0}%".format((review_percentage * 100).quantize(Decimal('0.0'))))  # 好评率
