@@ -104,8 +104,8 @@ class CClasses:
                     # 无评论情况下默认100%好评率
                     review_percentage = 1
                 else:
-                    review_percentage = Decimal(str(int(len(review_good) / len(review) or 0)))
-                doctor.fill("favorablerate", "{0}%".format(review_percentage * 100)) # 好评率
+                    review_percentage = Decimal(str(len(review_good) / len(review) or 0)).quantize(Decimal('0.000'))
+                doctor.fill("favorablerate", "{0}%".format((review_percentage * 100).quantize(Decimal('0.0'))))  # 好评率
                 register = Register.query.filter(Register.DOid == doid, Register.isdelete == 0).all()
                 doctor.fill("treatnum", len(register)) # 接诊次数
                 doctor_list2.append(doctor)

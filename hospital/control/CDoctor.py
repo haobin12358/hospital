@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from decimal import Decimal
+
 from flask import current_app
 import uuid
 
@@ -10,7 +12,7 @@ from hospital.extensions.success_response import Success
 from hospital.extensions.error_response import ParamsError, NotFound
 from hospital.extensions.params_validates import parameter_required, validate_telephone
 from hospital.extensions.register_ext import db
-from hospital.models import Departments, Doctor, DoctorMedia, Consultation, Enroll
+from hospital.models import Departments, Doctor, DoctorMedia, Consultation, Enroll, Review, Register
 from hospital.config.enums import DoctorMetiaType, ConsultationStatus
 
 
@@ -35,8 +37,9 @@ class CDoctor(object):
             # 填充会诊信息
             self._fill_consultation(doctor, conid)
 
-        doctor.fill('favorablerate', '100%')
-        doctor.fill('treatnum', '0')
+        # doctor.fill('favorablerate', '100%')
+        # doctor.fill('treatnum', '0')
+        self._fill_doctor_review(doctor)
         return Success('获取成功', data=doctor)
         # todo 填充会诊信息 填充视频信息
 
@@ -69,13 +72,15 @@ class CDoctor(object):
 
             if index == 'doname':
                 # todo 好评率 接诊次数
-                doctor.fill('favorablerate', '100%')
-                doctor.fill('treatnum', '0')
+                # doctor.fill('favorablerate', '100%')
+                # doctor.fill('treatnum', '0')
+                self._fill_doctor_review(doctor)
             if index == 'back':
                 doctor.add('DOtel')
                 # todo 好评率 接诊次数
-                doctor.fill('favorablerate', '100%')
-                doctor.fill('treatnum', '0')
+                # doctor.fill('favorablerate', '100%')
+                # doctor.fill('treatnum', '0')
+                self._fill_doctor_review(doctor)
 
         return Success('获取成功', data=doctors)
 
@@ -284,3 +289,18 @@ class CDoctor(object):
             doctor.fill('CONstatus', con.CONstatus)
             doctor.fill('CONstatus_zh', ConsultationStatus(con.CONstatus).zh_value)
             doctor.fill("CONnote", con.CONnote)
+
+    def _fill_doctor_review(self, doctor):
+        doid = doctor.DOid
+        review_good = Review.query.filter(Review.isdelete == 0, Review.RVnum >= 4, Review.DOid == doid).all()
+        review = Review.query.filter(Review.isdelete == 0, Review.DOid == doid).all()
+
+        current_app.logger.info('get review good = {} review = {}'.format(len(review_good), len(review)))
+        if len(review) == 0:
+            # 无评论情况下默认100%好评率
+            review_percentage = 1
+        else:
+            review_percentage = Decimal(str(len(review_good) / len(review) or 0))
+        doctor.fill("favorablerate", "{0}%".format((review_percentage * 100).quantize(Decimal('0.0'))))  # 好评率
+        register = Register.query.filter(Register.DOid == doid, Register.isdelete == 0).all()
+        doctor.fill("treatnum", len(register))  # 接诊次数
