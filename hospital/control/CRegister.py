@@ -32,9 +32,12 @@ class CRegister(object):
             if restatus:
                 filter_args.append(or_(Register.REstatus > RegisterStatus.transfer.value,
                                        Register.REstatus == RegisterStatus.cancle.value))
+            elif telphone and telphone != 'null' and not restatus:  # 手机号查看报告单时,显示该用户所有挂号记录报告单
+                filter_args.append(Register.REstatus > RegisterStatus.cancle.value)
             else:
                 filter_args.append(and_(Register.REstatus < RegisterStatus.commenting.value,
                                         Register.REstatus > RegisterStatus.cancle.value))
+
             if telphone:
                 family = Family.query.filter(Family.FAtel == telphone, Family.USid == usid,
                                              Family.isdelete == 0).first()
@@ -199,7 +202,8 @@ class CRegister(object):
             # 优先判断是否填写预约号
             if recode:
                 # 添加预约号
-                retansferdate, retansferamorpm = data.get('retansferdate'), data.get('retansferamorpm')
+                retansferdate, retansferamorpm = data.get('retansferdate') or data.get('redate'), \
+                                                 data.get('retansferamorpm') or data.get('reamorpm')
 
                 update_dict.setdefault('REcode', str(recode))
                 retansferdate = self._check_time(retansferdate)

@@ -112,12 +112,11 @@ class CClasses:
             classes.fill("doctor_list", doctor_list2)
         return Success(message="获取课程信息成功", data=classes)
 
+    @doctor_required
     def set_course(self):
         """
         课程排班
         """
-        if not is_doctor():
-            return AuthorityError('排班需医生账号操作')
         data = parameter_required(('clid', 'costarttime', 'coendtime', 'conum'))
         coid = data.get('coid')
         classes = Classes.query.filter(Classes.CLid == data.get('clid')).first_("未找到课程信息，请联系管理员")
@@ -136,7 +135,7 @@ class CClasses:
         co_dict = {
             "CLid": data.get("clid"),
             "CLname": classes["CLname"],
-            "DOid": token.id,
+            "DOid": request.user.id,
             "DOname": doctor["DOname"],
             "COstarttime": data.get("costarttime"),
             "COendtime": data.get("coendtime"),
