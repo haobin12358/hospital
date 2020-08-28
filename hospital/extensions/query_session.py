@@ -80,7 +80,10 @@ class Query(_Query):
         """
         args = request.args.to_dict()
         page = args.get('page_num') or 1
+        if request.path == '/api/doctor/list' and not args.get('page_size'):
+            args['page_size'] = 1000
         count = args.get('page_size') or 15
+
         if not page and not count:
             return self.all()
         try:

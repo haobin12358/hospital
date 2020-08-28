@@ -91,8 +91,10 @@ class CWelfare:
             coupon.fill("costatus_zh", CouponStatus(coupon.COstatus).zh_value)
             if coupon.COdownline == 0:
                 coupon.fill("codownline_zh", "无限制")
+                coupon.fill("coupon_name", "无限制")
             else:
                 coupon.fill("codownline_zh", "满足{0}元即可使用".format(Decimal(str(coupon.COdownline))))
+                coupon.fill("coupon_name", "满{}减{}".format(coupon.COdownline, coupon.COsubtration))
 
         return Success(message="获取优惠券列表成功", data=coupon_list)
 
