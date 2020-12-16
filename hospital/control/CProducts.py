@@ -9,7 +9,7 @@ from hospital.extensions.success_response import Success
 from hospital.extensions.error_response import ParamsError, StatusError
 from hospital.extensions.params_validates import parameter_required
 from hospital.extensions.register_ext import db
-from hospital.models import Admin, Coupon, Products, Classes
+from hospital.models import Admin, Coupon, Products, Classes, Setting
 from hospital.config.enums import ProductStatus, ProductType, AdminStatus, CouponStatus
 
 
@@ -19,6 +19,9 @@ class CProducts(object):
     def list(self):
         data = parameter_required()
         filter_args = [Products.isdelete == 0, ]
+        deid = data.get('deid')
+        if deid:
+            filter_args.append(Products.DEid == deid)
         if is_user():
             filter_args.append(Products.PRstatus == ProductStatus.usual.value)
         else:
@@ -54,6 +57,17 @@ class CProducts(object):
         product = Products.query.filter(*filter_args).first_('商品已下架')
         product.add('PRdesc', 'PRdetails')
         self._fill_coupon(product)
+        address = Setting.query.filter(Setting.STname == 'address', Setting.STtype == 2, Setting.isdelete == 0).first()
+        telphone = Setting.query.filter(Setting.STname == 'telphone', Setting.STtype == 2, Setting.isdelete == 0).first()
+        if address:
+            product.fill('address', address.STvalue)
+        else:
+            product.fill('address', "")
+        if telphone:
+            product.fill('telphone', telphone.STvalue)
+        else:
+            product.fill('telphone', "")
+
         return Success('获取成功', data=product)
 
     @admin_required
