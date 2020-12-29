@@ -179,5 +179,11 @@ class RegisterAmOrPm(Enum):
     pm = 1, '下午'
 
 
+class EvaluationPointLevel(Enum):
+    good = 0, '良好'
+    attention = 1, '注意'
+    vigilant = 2, '警惕'
+
+
 if __name__ == '__main__':
     print(CourseStatus(101).zh_value)

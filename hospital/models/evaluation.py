@@ -47,6 +47,15 @@ class EvaluationPoint(Base):
     EPend = Column(DECIMAL(scale=2), comment="分值区间高", nullable=False)
     EVid = Column(String(64), comment="问卷id", nullable=False)
     EPanswer = Column(Text, comment="对应结论", nullable=False)
+    EPtitle = Column(String(64), comment='分享图标题')
+    EPanalysis = Column(String(64), comment='初步分析')
+    EPevaluation = Column(Text, comment='评估建议')
+    DOid = Column(String(64), comment='关联医生')
+    DOname = Column(String(255), comment='医生名')
+    EPaward = Column(String(64), comment='奖励语')
+    EPshareWords = Column(Text, comment='分享语')
+    EPshareLevel = Column(Integer, default=0, comment='0: 良好 1: 注意 2: 警惕')
+
 
 class Answer(Base):
     """
@@ -57,6 +66,7 @@ class Answer(Base):
     USid = Column(String(64), comment="用户id", nullable=False)
     EVid = Column(String(64), comment="问卷id", nullable=False)
     EVname = Column(String(128), comment="问卷名称", nullable=False)
+    EVshare = Column(Text, comment='对应分享图')
     EPanswer = Column(Text, comment="对应结论")
 
 class AnswerItem(Base):
