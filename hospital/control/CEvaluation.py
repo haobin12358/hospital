@@ -6,12 +6,17 @@ last update time:2020/3/13 03:53
 import uuid
 from flask import request, current_app
 from decimal import Decimal
+
+from hospital.config.enums import EvaluationPointLevel
+from hospital.config.http_config import HTTP_HOST
 from hospital.extensions.interface.user_interface import is_hign_level_admin, is_admin, token_required, is_user
 from hospital.extensions.register_ext import db
 from hospital.extensions.params_validates import parameter_required
 from hospital.extensions.request_handler import token_to_user_
+from hospital.extensions.share.share import Share
 from hospital.extensions.success_response import Success
-from hospital.extensions.error_response import AuthorityError, PointError, EvaluationNumError
+from hospital.extensions.error_response import AuthorityError, PointError, EvaluationNumError, ParamsError
+from hospital.models import Doctor
 from hospital.models.evaluation import Evaluation, EvaluationAnswer, EvaluationItem, EvaluationPoint, Answer, AnswerItem
 
 class CEvaluation:
@@ -103,6 +108,7 @@ class CEvaluation:
     def set_evaluationpoint(self):
         """设置分数区间"""
         data = parameter_required(('evid', 'epstart', 'epend', 'epanswer') if not request.json.get('delete') else('epid',))
+        epid = data.get("epid")
         if not is_admin():
             return AuthorityError()
         if data.get('epstart') and data.get('epend'):
@@ -113,21 +119,67 @@ class CEvaluation:
         else:
             epstart = 0
             epend = 0
-        ep_dict = {
-            "EVid": data.get('evid'),
-            "EPstart": epstart,
-            "EPend": epend,
-            "EPanswer": data.get('epanswer')
-        }
-        epid = data.get("epid")
-        if data.get('evid'):
-            filter_args = [EvaluationPoint.EVid == data.get('evid'), EvaluationPoint.isdelete == 0]
-            if epid:
-                filter_args.append(EvaluationPoint.EPid != epid)
-            ep_list = EvaluationPoint.query.filter(*filter_args).all()
-            for ep in ep_list:
-                if not(epstart > Decimal(str(ep["EPend"] or 0)) or epend < Decimal(str(ep["EPstart"]) or 0)):
-                    return PointError('存在重叠分数区间')
+        epsharelevel = data.get('epsharelevel')
+        if not data.get('delete'):
+            try:
+                epsharelevel = EvaluationPointLevel(int(epsharelevel)).value
+            except :
+                raise ParamsError('分享等级目前只支持3级')
+            doid = data.get('doid')
+            title = data.get('eptitle') or ''
+            if len(title) > 4:
+                raise ParamsError('分享图标题 长度超标')
+            analysis = data.get('epanalysis') or ''
+            if len(analysis) > 12:
+                raise ParamsError('初步分析 长度超标')
+
+            evaluation = data.get('epevaluation') or ''
+            if len(evaluation) > 162:
+                raise ParamsError('评估建议 长度超标')
+            award = data.get('epaward') or ''
+            if len(award) > 15:
+                raise ParamsError('奖励语 长度超标')
+            shareWords = data.get('epshareWords') or ''
+            if len(shareWords) > 63:
+                raise ParamsError('分享文案 长度超标')
+            ep_dict = {
+                "EVid": data.get('evid'),
+                "EPstart": epstart,
+                "EPtitle": title,
+                "EPanalysis": analysis,
+                "EPevaluation": evaluation,
+                "EPshareWords": shareWords,
+                "EPshareLevel": epsharelevel,
+                "EPend": epend,
+                "EPanswer": data.get('epanswer')
+            }
+            if epsharelevel == EvaluationPointLevel.good.value:
+                if not award:
+                    raise ParamsError('请输入奖励词')
+                ep_dict['EPaward'] = award
+                ep_dict['DOid'] = ''
+                ep_dict['DOname'] = ''
+            elif epsharelevel == EvaluationPointLevel.vigilant.value:
+                doctor = Doctor.query.filter(Doctor.DOid == doid, Doctor.isdelete == 0).first()
+                if not doctor:
+                    raise ParamsError('当前医生不存在')
+                ep_dict['DOid'] = doid
+                ep_dict['DOname'] = doctor.DOname
+                ep_dict['EPaward'] = ''
+            else:
+                ep_dict['EPaward'] = ''
+                ep_dict['DOid'] = ''
+                ep_dict['DOname'] = ''
+
+            epid = data.get("epid")
+            if data.get('evid'):
+                filter_args = [EvaluationPoint.EVid == data.get('evid'), EvaluationPoint.isdelete == 0]
+                if epid:
+                    filter_args.append(EvaluationPoint.EPid != epid)
+                ep_list = EvaluationPoint.query.filter(*filter_args).all()
+                for ep in ep_list:
+                    if not(epstart > Decimal(str(ep["EPend"] or 0)) or epend < Decimal(str(ep["EPstart"]) or 0)):
+                        return PointError('存在重叠分数区间')
         with db.auto_commit():
             if not epid:
                 # 新增
@@ -225,8 +277,11 @@ class CEvaluation:
                 "EPanswer": answer
             }
             an_instance = Answer.create(an_dict)
+            share_url = Share(usid, point, an_instance).drawshare()
+            an_instance.EVshare = share_url
             db.session.add(an_instance)
+            # todo 创建分享图
         from .CConfig import CConfig
         from ..config.enums import PointTaskType
         CConfig()._judge_point(PointTaskType.make_evaluation.value, 1, usid)
-        return Success(message="提交评测成功", data={"answer": answer})
+        return Success(message="提交评测成功", data={"answer": answer, 'share': HTTP_HOST + share_url})

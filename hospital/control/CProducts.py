@@ -9,7 +9,7 @@ from hospital.extensions.success_response import Success
 from hospital.extensions.error_response import ParamsError, StatusError
 from hospital.extensions.params_validates import parameter_required
 from hospital.extensions.register_ext import db
-from hospital.models import Admin, Coupon, Products, Classes, Setting
+from hospital.models import Admin, Coupon, Products, Classes, Setting, Departments
 from hospital.config.enums import ProductStatus, ProductType, AdminStatus, CouponStatus
 
 
@@ -67,6 +67,14 @@ class CProducts(object):
             product.fill('telphone', telphone.STvalue)
         else:
             product.fill('telphone', "")
+        if product.DEid:
+            dep = Departments.query.filter(Departments.DEid == product.DEid, Departments.isdelete == 0).first()
+            if dep:
+                product.fill('dename', dep.DEname)
+            else:
+                product.fill('dename', '')
+        else:
+            product.fill('dename', '')
 
         return Success('获取成功', data=product)
 
@@ -83,7 +91,7 @@ class CProducts(object):
             data.get('prid'), data.get('prprice'), data.get('prvipprice'), data.get('prtype'), data.get('prstatus'),
             data.get('printegral'), data.get('prvipintegral'), data.get('prstock'), data.get('prsort'),
             data.get('prdetails'), data.get('smnum'))
-
+        deid = data.get('deid')
         if prprice:
             prprice = self._trans_decimal(prprice)
         if prvipprice:
@@ -124,6 +132,10 @@ class CProducts(object):
         if prdetails:
             if not isinstance(prdetails, list):
                 raise ParamsError('prdetails 格式不对')
+        if deid:
+            Departments.query.filter(Departments.DEid == deid, Departments.isdelete == 0).first_('科室已删除')
+        else:
+            deid = ''
 
         with db.auto_commit():
             if prid:
@@ -164,6 +176,7 @@ class CProducts(object):
                     if smnum:
                         update_dict['SMnum'] = smnum
 
+                    update_dict['DEid'] = deid
                     product.update(update_dict)
                     current_app.logger.info('更新商品信息 {}'.format(prid))
                     db.session.add(product)
@@ -190,6 +203,7 @@ class CProducts(object):
                 'PRdetails': data.get('prdetails'),
                 'PRdesc': data.get('prdesc'),
                 'PRsort': prsort,
+                'DEid': deid,
                 'SMnum': smnum,
             })
 

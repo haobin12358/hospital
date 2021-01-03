@@ -22,7 +22,7 @@ class User(Base):
     USunionid = Column(Text, comment='统一 unionID')
     UStelphone = Column(String(16), comment="手机号")
     UScardid = Column(String(32), comment="身份证号")
-    USwxac = Column(Text, comment='微信带参二维码')
+    USwxac = Column(Text, url=True, comment='微信带参二维码')
 
     @orm.reconstructor
     def __init__(self):

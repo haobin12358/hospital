@@ -7,6 +7,7 @@ last update time:2020/3/29 05:06
 from sqlalchemy import Integer, String, Text, DECIMAL
 from hospital.extensions.base_model import Base, Column
 
+
 class Evaluation(Base):
     """
     问卷
@@ -15,6 +16,7 @@ class Evaluation(Base):
     EVid = Column(String(64), primary_key=True)
     EVname = Column(String(128), comment="问卷名称", nullable=False)
     EVpicture = Column(Text, url=True, comment="问卷图", nullable=False)
+
 
 class EvaluationItem(Base):
     """
@@ -26,6 +28,7 @@ class EvaluationItem(Base):
     EIindex = Column(Integer, comment="标号", nullable=False)
     EVid = Column(String(64), comment="问卷id", nullable=False)
 
+
 class EvaluationAnswer(Base):
     """
     问题选项
@@ -36,6 +39,7 @@ class EvaluationAnswer(Base):
     EAindex = Column(String(8), comment="选项标号", nullable=False)
     EAname = Column(Text, comment="选项内容", nullable=False)
     EApoint = Column(DECIMAL(scale=2), comment="选项分值", nullable=False)
+
 
 class EvaluationPoint(Base):
     """
@@ -66,8 +70,9 @@ class Answer(Base):
     USid = Column(String(64), comment="用户id", nullable=False)
     EVid = Column(String(64), comment="问卷id", nullable=False)
     EVname = Column(String(128), comment="问卷名称", nullable=False)
-    EVshare = Column(Text, comment='对应分享图')
+    EVshare = Column(Text, url=True, comment='对应分享图')
     EPanswer = Column(Text, comment="对应结论")
+
 
 class AnswerItem(Base):
     """
