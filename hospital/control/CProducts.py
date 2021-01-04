@@ -4,7 +4,7 @@ from decimal import Decimal
 from flask import current_app, request
 import uuid
 
-from hospital.extensions.interface.user_interface import is_user, admin_required, token_required
+from hospital.extensions.interface.user_interface import is_user, admin_required, token_required, is_admin
 from hospital.extensions.success_response import Success
 from hospital.extensions.error_response import ParamsError, StatusError
 from hospital.extensions.params_validates import parameter_required
@@ -15,14 +15,15 @@ from hospital.config.enums import ProductStatus, ProductType, AdminStatus, Coupo
 
 class CProducts(object):
 
-    @token_required
+    # @token_required
     def list(self):
         data = parameter_required()
         filter_args = [Products.isdelete == 0, ]
-        deid = data.get('deid')
-        if deid:
-            filter_args.append(Products.DEid == deid)
-        if is_user():
+        dename = data.get('dename')
+        if dename:
+            filter_args.append(Departments.DEname.ilike('%{}%'.format(dename)))
+            filter_args.append(Departments.DEid == Products.DEid)
+        if not is_admin():
             filter_args.append(Products.PRstatus == ProductStatus.usual.value)
         else:
             prtitle, prstatus, prtype = data.get('prtitle'), data.get('prstatus'), data.get('prtype')
