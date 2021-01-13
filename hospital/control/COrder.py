@@ -426,6 +426,8 @@ class COrder(object):
             content = json.dumps(classes, cls=JSONEncoder)
 
         # 库存修改
+        if product.PRstock < omnum:
+            raise ParamsError('商品库存不足')
         product.PRstock -= omnum
 
         om = OrderMain.create({

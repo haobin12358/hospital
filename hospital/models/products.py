@@ -24,6 +24,7 @@ class Products(Base):
     PRsort = Column(Integer, default=0, comment='排序')
     CLid = Column(String(64), comment='课程ID')
     SMnum = Column(Integer, default=0, comment='课时数')
+    DEid = Column(String(64), comment='关联科室')
 
     @orm.reconstructor
     def __init__(self):

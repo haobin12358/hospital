@@ -22,6 +22,7 @@ class User(Base):
     USunionid = Column(Text, comment='统一 unionID')
     UStelphone = Column(String(16), comment="手机号")
     UScardid = Column(String(32), comment="身份证号")
+    USwxac = Column(Text, url=True, comment='微信带参二维码')
 
     @orm.reconstructor
     def __init__(self):
@@ -110,3 +111,12 @@ class UserHour(Base):
     CLid = Column(String(64), comment='课程ID')
     SMnum = Column(Integer, default=0, comment='课时')
     UHnum = Column(Integer, default=0, comment='可用课时')
+
+
+class SharingParameters(Base):
+    """短分享参数"""
+    __tablename__ = 'SharingParameters'
+    SPSid = Column(Integer, autoincrement=True, primary_key=True, comment='主键，同时作为缩短的参数')
+    USid = Column(String(64), comment='用户id')
+    SPScontent = Column(Text, comment='分享的原参数')
+    SPSname = Column(String(30), comment='分享的参数名 如: secret_usid, plid')

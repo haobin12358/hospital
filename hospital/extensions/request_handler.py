@@ -100,6 +100,12 @@ def _invitation_records():
 
 
 def base_decode(raw):
+    import base64
+    if len(raw) < 20:
+        from hospital.models import SharingParameters
+        from hospital.extensions.register_ext import db
+        raw = db.session.query(SharingParameters.SPScontent).filter(SharingParameters.SPSid == raw).scalar()
+        raw = str(raw).split('=')[-1]
     decoded = base64.b64decode(raw + '=' * (4 - len(raw) % 4)).decode()
     return decoded
 
