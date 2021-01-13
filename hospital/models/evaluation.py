@@ -71,6 +71,7 @@ class Answer(Base):
     EVid = Column(String(64), comment="问卷id", nullable=False)
     EVname = Column(String(128), comment="问卷名称", nullable=False)
     EVshare = Column(Text, url=True, comment='对应分享图')
+    EVpoint = Column(Integer, comment='得分')
     EPanswer = Column(Text, comment="对应结论")
 
 
