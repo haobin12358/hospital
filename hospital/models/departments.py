@@ -27,6 +27,12 @@ class Symptom(Base):
     SYname = Column(String(255), nullable=False, comment='症状名')
     SYsort = Column(Integer, default=0, comment='症状排序')
     DEid = Column(String(64), comment='科室id')
+    SYage = Column(String(16), comment='发病年龄')
+    SYdt = Column(String(255), comment='病种')
+    SYtime = Column(String(255), comment='治疗时间')
+    SYcommon = Column(Text, comment='常见症状')
+    SYreason = Column(Text, comment='发病原因')
+    SYattention = Column(Text, comment='注意事项')
 
     @orm.reconstructor
     def __init__(self):

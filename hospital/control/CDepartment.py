@@ -19,7 +19,7 @@ class CDepartment(object):
     def _fill_dep_details(self, dep, index=None):
         dep.fields = '__all__'
         symptoms = Symptom.query.filter(Symptom.DEid == dep.DEid, Symptom.isdelete == 0).order_by(
-            Symptom.SYsort.asc(), Symptom.createtime.asc()).all()
+            Symptom.SYsort.asc(), Symptom.createtime.desc()).all()
         # 症状填充
         dep.fill('symptoms', symptoms)
         if index:
@@ -55,15 +55,29 @@ class CDepartment(object):
                 Symptom.isdelete == 0).first()
             if symptom:
                 symptom.SYsort = sysort
+                symptom.SYage = symptom_dict.get('syage'),
+                symptom.SYdt = symptom_dict.get('sydt'),
+                symptom.SYtime = symptom_dict.get('sytime'),
+                symptom.SYcommon = symptom_dict.get('sycommon'),
+                symptom.SYreason = symptom_dict.get('syreason'),
+                symptom.SYattention = symptom_dict.get('syattention'),
+
                 # db.session.add(symptom)
                 syid = symptom.SYid
+
             else:
                 syid = str(uuid.uuid1())
                 symptom = Symptom.create({
                     'SYid': syid,
                     'SYname': syname,
                     'SYsort': sysort,
-                    'DEid': dep.DEid
+                    'DEid': dep.DEid,
+                    'SYage': symptom_dict.get('syage'),
+                    'SYdt': symptom_dict.get('sydt'),
+                    'SYtime': symptom_dict.get('sytime'),
+                    'SYcommon': symptom_dict.get('sycommon'),
+                    'SYreason': symptom_dict.get('syreason'),
+                    'SYattention': symptom_dict.get('syattention'),
                 })
             syid_list.append(syid)
             symptom_list.append(symptom)
@@ -169,4 +183,7 @@ class CDepartment(object):
         deid = data.get('deid')
         sy_list = Symptom.query.filter(Symptom.DEid == deid, Symptom.isdelete == 0).order_by(
             Symptom.SYsort.asc(), Symptom.createtime.desc()).all_with_page()
+        for sy in sy_list:
+            sy.fields = '__all__'
+
         return Success('症状列表获取成功', data=sy_list)
