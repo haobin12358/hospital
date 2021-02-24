@@ -183,7 +183,13 @@ class CDepartment(object):
         deid = data.get('deid')
         sy_list = Symptom.query.filter(Symptom.DEid == deid, Symptom.isdelete == 0).order_by(
             Symptom.SYsort.asc(), Symptom.createtime.desc()).all_with_page()
-        for sy in sy_list:
-            sy.fields = '__all__'
 
         return Success('症状列表获取成功', data=sy_list)
+
+    def get_sympotom(self):
+        data = parameter_required('syid')
+        syid = data.get('syid')
+        sy = Symptom.query.filter(Symptom.SYid == syid, Symptom.isdelete == 0).order_by(
+            Symptom.SYsort.asc(), Symptom.createtime.desc()).first_('症状案例已下架')
+
+        return Success('症状列表获取成功', data=sy)

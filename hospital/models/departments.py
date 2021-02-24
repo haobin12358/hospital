@@ -37,7 +37,7 @@ class Symptom(Base):
     @orm.reconstructor
     def __init__(self):
         super(Symptom, self).__init__()
-        self.fields = ['SYid', 'SYname']
+        self.fields = ['SYid', 'SYname', 'DEid', 'SYage', 'SYdt', 'SYtime', 'SYcommon', 'SYreason', 'SYattention']
 
 
 class Doctor(Base):
