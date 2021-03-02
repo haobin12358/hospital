@@ -9,6 +9,7 @@ class AEvaluation(Resource):
     def get(self, evaluation):
         apis = {
             "list": self.cevaluation.list,
+            "list_submitter": self.cevaluation.list_submitter,
             "get": self.cevaluation.get
         }
 

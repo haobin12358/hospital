@@ -168,7 +168,7 @@ class CActivity(object):
         users = User.query.join(UserActivity, UserActivity.USid == User.USid
                                 ).filter(UserActivity.isdelete == false(),
                                          UserActivity.ACid == args.get('acid')
-                                         ).all_with_page()
+                                         ).order_by(UserActivity.createtime.desc()).all_with_page()
         for user in users:
             user.fields = ['USid', 'USname', 'USavatar', 'USgender', 'UStelphone']
         return Success(data=users)

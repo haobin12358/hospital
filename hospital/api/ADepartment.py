@@ -12,6 +12,7 @@ class ADepartment(Resource):
             'get': self.cdepartment.get,
             'list': self.cdepartment.list,
             'list_sympotom': self.cdepartment.list_sympotom,
+            'get_sympotom': self.cdepartment.get_sympotom,
         }
         return apis
 

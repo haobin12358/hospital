@@ -16,14 +16,15 @@ from hospital.extensions.request_handler import token_to_user_
 from hospital.extensions.share.share import Share
 from hospital.extensions.success_response import Success
 from hospital.extensions.error_response import AuthorityError, PointError, EvaluationNumError, ParamsError
-from hospital.models import Doctor
+from hospital.models import Doctor, User
 from hospital.models.evaluation import Evaluation, EvaluationAnswer, EvaluationItem, EvaluationPoint, Answer, AnswerItem
+
 
 class CEvaluation:
 
     def set_evaluation(self):
         """设置问卷主体"""
-        data = parameter_required(('evname', 'evpicture', ) if not request.json.get('delete') else('evid',))
+        data = parameter_required(('evname', 'evpicture',) if not request.json.get('delete') else ('evid',))
         if not is_admin():
             return AuthorityError()
         ev_dict = {
@@ -50,7 +51,7 @@ class CEvaluation:
 
     def set_evaluationitem(self):
         """设置问卷题目"""
-        data = parameter_required(('evid', 'einame', 'eiindex', ) if not request.json.get('delete') else('eiid', ))
+        data = parameter_required(('evid', 'einame', 'eiindex',) if not request.json.get('delete') else ('eiid',))
         if not (is_hign_level_admin() or is_admin()):
             return AuthorityError()
         ei_dict = {
@@ -78,7 +79,8 @@ class CEvaluation:
 
     def set_evaluationanswer(self):
         """设置题目选项"""
-        data = parameter_required(('eiid', 'eaname', 'eaindex', 'eapoint') if not request.json.get('delete') else('eaid',))
+        data = parameter_required(
+            ('eiid', 'eaname', 'eaindex', 'eapoint') if not request.json.get('delete') else ('eaid',))
         if not is_admin():
             return AuthorityError()
         ea_dict = {
@@ -107,7 +109,8 @@ class CEvaluation:
 
     def set_evaluationpoint(self):
         """设置分数区间"""
-        data = parameter_required(('evid', 'epstart', 'epend', 'epanswer') if not request.json.get('delete') else('epid',))
+        data = parameter_required(
+            ('evid', 'epstart', 'epend', 'epanswer') if not request.json.get('delete') else ('epid',))
         epid = data.get("epid")
         if not is_admin():
             return AuthorityError()
@@ -123,7 +126,7 @@ class CEvaluation:
         if not data.get('delete'):
             try:
                 epsharelevel = EvaluationPointLevel(int(epsharelevel)).value
-            except :
+            except:
                 raise ParamsError('分享等级目前只支持3级')
             doid = data.get('doid')
             title = data.get('eptitle') or ''
@@ -178,7 +181,7 @@ class CEvaluation:
                     filter_args.append(EvaluationPoint.EPid != epid)
                 ep_list = EvaluationPoint.query.filter(*filter_args).all()
                 for ep in ep_list:
-                    if not(epstart > Decimal(str(ep["EPend"] or 0)) or epend < Decimal(str(ep["EPstart"]) or 0)):
+                    if not (epstart > Decimal(str(ep["EPend"] or 0)) or epend < Decimal(str(ep["EPstart"]) or 0)):
                         return PointError('存在重叠分数区间')
         with db.auto_commit():
             if not epid:
@@ -205,21 +208,21 @@ class CEvaluation:
     @token_required
     def get(self):
         """获取评测详情"""
-        args = parameter_required(('evid', ))
+        args = parameter_required(('evid',))
         evid = args.get("evid")
         evaluation = Evaluation.query.filter(Evaluation.isdelete == 0, Evaluation.EVid == evid).first_("未找到该评测")
-        evaluationitem = EvaluationItem.query.filter(EvaluationItem.isdelete == 0, EvaluationItem.EVid == evid)\
+        evaluationitem = EvaluationItem.query.filter(EvaluationItem.isdelete == 0, EvaluationItem.EVid == evid) \
             .order_by(EvaluationItem.EIindex.asc()).all()
         for item in evaluationitem:
             eiid = item["EIid"]
             evaluationanswer = EvaluationAnswer.query.filter(EvaluationAnswer.isdelete == 0,
-                                                             EvaluationAnswer.EIid == eiid)\
+                                                             EvaluationAnswer.EIid == eiid) \
                 .order_by(EvaluationAnswer.EAindex.asc()).all()
             item.fill("ea_list", evaluationanswer)
         evaluation.fill("ei_list", evaluationitem)
 
         if is_admin():
-            ep_list = EvaluationPoint.query.filter(EvaluationPoint.isdelete == 0, EvaluationPoint.EVid == evid)\
+            ep_list = EvaluationPoint.query.filter(EvaluationPoint.isdelete == 0, EvaluationPoint.EVid == evid) \
                 .order_by(EvaluationPoint.EPstart.asc()).all()
             evaluation.fill("ep_list", ep_list)
 
@@ -236,18 +239,18 @@ class CEvaluation:
         anid = str(uuid.uuid1())
         with db.auto_commit():
             point = Decimal(0.0)
-            evaluationitem_all = EvaluationItem.query.filter(EvaluationItem.isdelete == 0, EvaluationItem.EVid == evid).all()
+            evaluationitem_all = EvaluationItem.query.filter(EvaluationItem.isdelete == 0,
+                                                             EvaluationItem.EVid == evid).all()
             if len(evaluationitem_all) != len(data.get('ei_list')):
                 return EvaluationNumError()
             for ei in data.get('ei_list'):
-
                 eiid = ei["eiid"]
                 eaid = ei["eaid"]
                 evaluationitem = EvaluationItem.query.filter(EvaluationItem.EIid == eiid,
-                                                             EvaluationItem.isdelete == 0)\
+                                                             EvaluationItem.isdelete == 0) \
                     .first_("未找到该题目")
                 evaluationanswer = EvaluationAnswer.query.filter(EvaluationAnswer.EAid == eaid,
-                                                                 EvaluationAnswer.isdelete == 0)\
+                                                                 EvaluationAnswer.isdelete == 0) \
                     .first_("未找到该选项")
                 ai_dict = {
                     "AIid": str(uuid.uuid1()),
@@ -265,8 +268,10 @@ class CEvaluation:
             # 总积分逻辑改为平均分
             # point = Decimal(str(point / len(evaluationitem_all)))
             current_app.logger.info(point)
-            evaluationpoint = EvaluationPoint.query.filter(EvaluationPoint.EPstart <= point, EvaluationPoint.EVid == evid,
-                                                           EvaluationPoint.EPend >= point, EvaluationPoint.isdelete == 0)\
+            evaluationpoint = EvaluationPoint.query.filter(EvaluationPoint.EPstart <= point,
+                                                           EvaluationPoint.EVid == evid,
+                                                           EvaluationPoint.EPend >= point,
+                                                           EvaluationPoint.isdelete == 0) \
                 .first_("未找到评测结论")
             answer = evaluationpoint["EPanswer"]
             an_dict = {
@@ -274,6 +279,7 @@ class CEvaluation:
                 "USid": usid,
                 "EVid": evid,
                 "EVname": evaluation["EVname"],
+                "EVpoint": point,
                 "EPanswer": answer
             }
             an_instance = Answer.create(an_dict)
@@ -285,3 +291,25 @@ class CEvaluation:
         from ..config.enums import PointTaskType
         CConfig()._judge_point(PointTaskType.make_evaluation.value, 1, usid)
         return Success(message="提交评测成功", data={"answer": answer, 'share': HTTP_HOST + share_url})
+
+    def list_submitter(self):
+        if not is_admin():
+            raise AuthorityError('权限不足')
+
+        data = parameter_required({'evid': '问卷'})
+        evid = data.get('evid')
+        an_list = Answer.query.filter(Evaluation.EVid == Answer.EVid, Answer.EVid == evid,
+                                      Answer.isdelete == 0, Evaluation.isdelete == 0).order_by(
+            Answer.createtime.desc()).all_with_page()
+
+        usid_list = [an.USid for an in an_list]
+        user_list = User.query.filter(User.USid.in_(usid_list), User.isdelete == 0).all()
+        user_dict = {user.USid: user for user in user_list}
+        for an in an_list:
+            user = user_dict.get(an.USid)
+            if not user:
+                continue
+            an.fill('USname', user.USname or '')
+            an.fill('UStelphone', user.UStelphone or '')
+            an.fill('USavatar', user['USavatar'] or '')
+        return Success(data=an_list)
