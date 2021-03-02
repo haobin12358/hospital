@@ -350,6 +350,7 @@ class CConfig:
                 """收入"""
                 pointtask = PointTask.query.filter(PointTask.PTtype == pttype).first_("该类型错误")
                 pttime = int(pointtask.PTtime or 0)
+
                 ui_dict = {
                     "UIid": str(uuid.uuid1()),
                     "USid": usid,
@@ -367,8 +368,10 @@ class CConfig:
                     # 当日已完成次数
                     userintegral = UserIntegral.query.filter(UserIntegral.createtime > time_start,
                                                              UserIntegral.createtime < time_end,
+                                                             UserIntegral.USid == usid,
                                                              UserIntegral.isdelete == 0,
                                                              UserIntegral.UIaction == pttype).all()
+                    current_app.logger.info('get userintegral = {} get pttime = {}'.format(len(userintegral), pttime))
                     if len(userintegral) >= pttime:
                         return 0
                     else:
@@ -397,6 +400,7 @@ class CConfig:
                 ui_instance = UserIntegral.create(ui_dict)
             else:
                 return SystemError("服务端异常")
+
             db.session.add(ui_instance)
             return 1
 
