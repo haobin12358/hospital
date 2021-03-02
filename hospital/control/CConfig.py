@@ -350,7 +350,7 @@ class CConfig:
                 """收入"""
                 pointtask = PointTask.query.filter(PointTask.PTtype == pttype).first_("该类型错误")
                 pttime = int(pointtask.PTtime or 0)
-                current_app.logger.info('get pointtask = {} usid = {} pttype = {}'.format(pointtask, usid, pttype))
+
                 ui_dict = {
                     "UIid": str(uuid.uuid1()),
                     "USid": usid,
@@ -400,7 +400,7 @@ class CConfig:
                 ui_instance = UserIntegral.create(ui_dict)
             else:
                 return SystemError("服务端异常")
-            current_app.logger.info('get ui instance = {}'.format(ui_instance))
+
             db.session.add(ui_instance)
             return 1
 
