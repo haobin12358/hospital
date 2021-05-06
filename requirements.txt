@@ -12,7 +12,7 @@ Click==7.0
 crcmod==1.7
 Flask==1.1.1
 Flask-Celery-Helper==1.1.0
-Flask-Cors==3.0.8
+Flask-Cors==3.0.9
 Flask-Script==2.0.6
 Flask-SQLAlchemy==2.4.1
 gevent==1.4.0
