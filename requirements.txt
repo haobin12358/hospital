@@ -5,7 +5,7 @@ aliyun-python-sdk-core-v3==2.13.11
 aliyun-python-sdk-kms==2.10.1
 amqp==2.5.2
 billiard==3.6.3.0
-celery==4.4.2
+celery==5.2.2
 certifi==2019.11.28
 chardet==3.0.4
 Click==7.0
