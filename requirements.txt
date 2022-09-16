@@ -26,7 +26,7 @@ Jinja2==2.10.3
 jmespath==0.9.5
 kombu==4.6.8
 lxml==4.4.2
-Mako==1.1.2
+Mako==1.2.2
 MarkupSafe==1.1.1
 numpy==1.18.2
 opencv-python==4.2.0.32
