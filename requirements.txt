@@ -6,7 +6,7 @@ aliyun-python-sdk-kms==2.10.1
 amqp==2.5.2
 billiard==3.6.3.0
 celery==4.4.2
-certifi==2019.11.28
+certifi==2022.12.7
 chardet==3.0.4
 Click==7.0
 crcmod==1.7
